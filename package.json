@@ -1,0 +1,44 @@
+{
+  "name": "cybercode-cli",
+  "version": "1.0.1",
+  "description": "Codex-dark web UI with a built-in self-evolving agent + HyperFrames video skills",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "bin": {
+    "cybercode": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "python/",
+    "skills/",
+    "templates/",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "agent",
+    "ai",
+    "llm",
+    "codex",
+    "web-ui",
+    "automation",
+    "self-evolving",
+    "hyperframes",
+    "video-generation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "homepage": "",
+  "scripts": {
+    "start": "node bin/cli.mjs",
+    "prepublishOnly": "node -e \"console.log('Publishing cybercode...')\""
+  }
+}

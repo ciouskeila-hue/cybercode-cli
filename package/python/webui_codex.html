@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GenericAgent · Codex</title>
+    <style>
+      :root {
+        --bg: #2a2a2f;
+        --panel: #1f1f22;
+        --text: rgba(255, 255, 255, 0.94);
+        --muted: rgba(255, 255, 255, 0.54);
+        --line: rgba(255, 255, 255, 0.08);
+        --accent: #6b8cff;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        width: 100%; height: 100%; margin: 0; overflow: hidden;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background:
+          radial-gradient(circle at 17% 13%, rgba(214, 232, 255, 0.92) 0, rgba(164, 183, 255, 0.7) 9%, rgba(92, 112, 255, 0.12) 24%, rgba(92, 112, 255, 0) 34%),
+          radial-gradient(circle at 50% 1%, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0.55) 10%, rgba(255, 255, 255, 0) 26%),
+          radial-gradient(circle at 86% 45%, rgba(88, 58, 255, 0.62) 0, rgba(88, 58, 255, 0.3) 10%, rgba(88, 58, 255, 0) 28%),
+          radial-gradient(circle at 12% 92%, rgba(29, 82, 245, 0.92) 0, rgba(29, 82, 245, 0.52) 12%, rgba(29, 82, 245, 0) 34%),
+          radial-gradient(circle at 92% 93%, rgba(171, 123, 255, 0.82) 0, rgba(171, 123, 255, 0.42) 12%, rgba(171, 123, 255, 0) 35%),
+          linear-gradient(180deg, #6071ff 0%, #5d63f5 18%, #414fe5 44%, #1f3adf 72%, #2740f0 100%);
+      }
+      body::before {
+        content: ""; position: fixed; inset: -12%; pointer-events: none; opacity: 0.88; filter: blur(26px);
+        background:
+          radial-gradient(circle at 23% 22%, rgba(255,255,255,.18), transparent 22%),
+          radial-gradient(circle at 74% 26%, rgba(255,255,255,.11), transparent 20%),
+          radial-gradient(circle at 71% 78%, rgba(255,255,255,.08), transparent 18%);
+      }
+
+      .desktop { position: relative; width: 100vw; height: 100vh; }
+
+      .window {
+        position: absolute; left: 50%; top: 50%;
+        width: min(1413px, calc(100vw - 102px));
+        height: min(823px, calc(100vh - 138px));
+        transform: translate(-50%, -49.4%);
+        background: linear-gradient(180deg, #212123 0%, #202022 100%);
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(10,10,16,.28), 0 0 0 1px rgba(255,255,255,.03) inset;
+        overflow: hidden;
+      }
+
+      /* ---- sidebar ---- */
+      .sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 285px; background: #19191b; border-right: 1px solid rgba(255,255,255,.02); display: flex; flex-direction: column; }
+      .sidebar-inner { padding: 14px 18px 14px 20px; color: var(--text); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+      .traffic { display: flex; gap: 8px; padding-top: 4px; margin-bottom: 22px; }
+      .traffic span { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset; }
+      .traffic .red { background: #ff5f57; } .traffic .yellow { background: #febc2e; } .traffic .green { background: #28c840; }
+
+      .nav-item, .thread, .section-title { display: flex; align-items: center; gap: 10px; height: 30px; font-size: 14px; line-height: 1; }
+      .nav-item { color: rgba(255,255,255,.9); margin-bottom: 4px; cursor: pointer; border-radius: 8px; padding: 0 6px; }
+      .nav-item:hover { background: rgba(255,255,255,.05); }
+      .nav-item svg { flex: 0 0 auto; opacity: .9; }
+      .section-title { color: rgba(255,255,255,.5); margin: 16px 0 8px; font-size: 13px; height: 24px; letter-spacing: .02em; }
+      .scroll { flex: 1; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+      .scroll::-webkit-scrollbar { width: 8px; } .scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 4px; }
+
+      .thread { color: rgba(255,255,255,.88); padding: 0 8px; margin: 1px 0; cursor: pointer; border-radius: 8px; }
+      .thread:hover { background: rgba(255,255,255,.06); }
+      .thread.active { background: rgba(107,140,255,.18); }
+      .thread .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+      .thread .meta { font-size: 11px; color: rgba(255,255,255,.4); flex: 0 0 auto; }
+      .thread .dot { width: 7px; height: 7px; border-radius: 50%; background: #2997ff; flex: 0 0 auto; box-shadow: 0 0 0 1px rgba(41,151,255,.3); }
+      .skill-row { display: flex; align-items: center; gap: 8px; height: 26px; font-size: 12.5px; color: rgba(255,255,255,.78); padding: 0 8px; border-radius: 8px; cursor: default; }
+      .skill-row:hover { background: rgba(255,255,255,.05); }
+      .skill-row .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+      /* ---- content ---- */
+      .content { position: absolute; left: 285px; top: 0; right: 0; bottom: 0; color: var(--text); background: linear-gradient(180deg, rgba(37,37,39,.98), rgba(35,35,37,.98)); display: flex; flex-direction: column; }
+      .topbar { height: 40px; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 16px; }
+      .title { font-size: 13px; color: rgba(255,255,255,.86); display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .title .crumb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .toolbar { display: flex; gap: 8px; }
+      .toolbar button { width: 34px; height: 28px; border-radius: 10px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.1); display: grid; place-items: center; padding: 0; cursor: pointer; color: rgba(255,255,255,.82); }
+      .toolbar button:hover { background: rgba(255,255,255,.08); }
+      .toolbar button:disabled { opacity: .35; cursor: not-allowed; }
+
+      .messages { flex: 1; overflow-y: auto; position: relative; padding: 8px 0 24px; }
+      .messages::-webkit-scrollbar { width: 10px; } .messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 5px; }
+
+      .empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; transform: translateY(-3%); }
+      .logo { width: 52px; height: 52px; color: rgba(255,255,255,.95); }
+      .build-text { font-size: 34px; line-height: 1; font-weight: 500; letter-spacing: -0.03em; color: rgba(255,255,255,.96); }
+
+      .pill { position: relative; height: 32px; padding: 0 13px 0 11px; border-radius: 14px; background: #3a3a3d; border: 1px solid rgba(255,255,255,.05); display: inline-flex; align-items: center; gap: 7px; color: rgba(255,255,255,.82); font-size: 13.5px; cursor: pointer; }
+      .pill:hover { background: #424246; }
+      .pill .caret { opacity: .6; }
+      .pill-menu { position: absolute; bottom: 40px; left: 0; min-width: 220px; max-height: 320px; overflow-y: auto; background: #2a2a2d; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.4); padding: 6px; z-index: 50; display: none; }
+      .pill-menu.open { display: block; }
+      .pill-menu .item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,.85); cursor: pointer; }
+      .pill-menu .item:hover { background: rgba(255,255,255,.08); }
+      .pill-menu .item.active { color: #8aa6ff; }
+      .pill-menu .item .check { width: 14px; opacity: 0; } .pill-menu .item.active .check { opacity: 1; }
+      .pill-menu .hint { padding: 8px 10px; font-size: 11.5px; color: rgba(255,255,255,.45); }
+
+      /* chat bubbles */
+      .stream { max-width: 760px; margin: 0 auto; padding: 0 28px; display: flex; flex-direction: column; gap: 18px; }
+      .msg { display: flex; flex-direction: column; gap: 8px; }
+      .msg.user { align-items: flex-end; }
+      .bubble { max-width: 100%; border-radius: 16px; padding: 12px 15px; font-size: 14.5px; line-height: 1.55; word-wrap: break-word; overflow-wrap: anywhere; }
+      .msg.user .bubble { background: #2f5bff; color: #fff; border-bottom-right-radius: 5px; max-width: 78%; }
+      .msg.assistant .bubble { background: #2b2b2e; border: 1px solid rgba(255,255,255,.06); border-bottom-left-radius: 5px; }
+      .msg.assistant .bubble.streaming::after { content: "▋"; color: #8aa6ff; animation: blink 1s steps(2) infinite; margin-left: 1px; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .role-tag { font-size: 11px; color: rgba(255,255,255,.4); padding: 0 4px; }
+      .msg.assistant .role-tag { align-self: flex-start; }
+
+      /* turn folding + tool chips + file refs (inside assistant bubbles) */
+      .turn { margin: 6px 0; }
+      .turn-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,.6); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 4px 9px; cursor: pointer; user-select: none; }
+      .turn-chip:hover { background: rgba(255,255,255,.1); }
+      .turn-chip .tri { font-size: 9px; transition: transform .15s; } .turn-chip.open .tri { transform: rotate(90deg); }
+      .turn-body { margin-top: 6px; }
+      .turn.collapsed .turn-body { display: none; }
+      .tool-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #c9d4ff; background: rgba(107,140,255,.14); border: 1px solid rgba(107,140,255,.22); border-radius: 7px; padding: 3px 8px; margin: 4px 0; }
+      .file-ref { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #8fd0a8; background: rgba(143,208,168,.1); border: 1px solid rgba(143,208,168,.2); border-radius: 6px; padding: 2px 7px; cursor: pointer; }
+      .file-ref:hover { background: rgba(143,208,168,.18); }
+
+      /* markdown */
+      .md p { margin: 0 0 8px; } .md p:last-child { margin-bottom: 0; }
+      .md h1,.md h2,.md h3 { margin: 12px 0 6px; line-height: 1.3; font-weight: 600; }
+      .md h1 { font-size: 18px; } .md h2 { font-size: 16px; } .md h3 { font-size: 14.5px; }
+      .md ul,.md ol { margin: 6px 0 8px; padding-left: 22px; } .md li { margin: 2px 0; }
+      .md a { color: #8aa6ff; text-decoration: none; } .md a:hover { text-decoration: underline; }
+      .md strong { font-weight: 600; color: #fff; }
+      .md code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
+      .md pre { background: #161617; border: 1px solid rgba(255,255,255,.07); border-radius: 10px; padding: 12px 13px; overflow-x: auto; margin: 8px 0; }
+      .md pre code { background: none; padding: 0; font-size: 13px; line-height: 1.5; color: #e7e7ea; }
+      .md blockquote { border-left: 3px solid rgba(107,140,255,.5); margin: 8px 0; padding: 2px 12px; color: rgba(255,255,255,.7); }
+      .md table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+      .md th,.md td { border: 1px solid rgba(255,255,255,.12); padding: 5px 9px; }
+      .md hr { border: none; border-top: 1px solid rgba(255,255,255,.1); margin: 10px 0; }
+
+      .err-bubble { background: rgba(239,68,68,.12) !important; border: 1px solid rgba(239,68,68,.3) !important; color: #ffb4b4; }
+
+      /* ---- composer ---- */
+      .composer { flex: 0 0 auto; padding: 0 0 22px; }
+      .composer-inner { max-width: 637px; margin: 0 auto; }
+      .input-shell { position: relative; background: #353537; border: 1px solid rgba(255,255,255,.09); border-radius: 26px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02); padding: 14px 56px 14px 16px; min-height: 56px; }
+      .input-shell:focus-within { border-color: rgba(107,140,255,.5); }
+      #input { width: 100%; background: none; border: none; outline: none; resize: none; color: var(--text); font-family: inherit; font-size: 14.5px; line-height: 1.5; max-height: 200px; min-height: 22px; }
+      #input::placeholder { color: rgba(255,255,255,.42); }
+      .plus { position: absolute; left: 14px; bottom: 12px; font-size: 26px; line-height: 1; color: rgba(255,255,255,.7); cursor: pointer; font-weight: 300; user-select: none; }
+      .plus:hover { color: #fff; }
+      .send { position: absolute; right: 10px; bottom: 10px; width: 36px; height: 36px; border-radius: 50%; background: #f4f3f2; display: grid; place-items: center; color: #1c1c1d; cursor: pointer; }
+      .send:hover { background: #fff; }
+      .send.stop { background: #ff5f57; color: #fff; }
+      .send:disabled { opacity: .4; cursor: not-allowed; }
+      .attach-row { display: none; margin-top: 8px; gap: 6px; }
+      .attach-row.show { display: flex; }
+      .attach-row input { flex: 1; background: #2b2b2d; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: var(--text); font-family: ui-monospace, monospace; font-size: 12.5px; padding: 6px 9px; outline: none; }
+
+      .footer-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 0 14px 0 16px; font-size: 13px; color: rgba(255,255,255,.55); }
+      .modes { display: flex; gap: 16px; align-items: center; }
+      .mode { cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+      .mode:hover { color: rgba(255,255,255,.8); }
+      .mode.active { color: rgba(255,255,255,.92); font-weight: 500; }
+      .branch { display: flex; align-items: center; gap: 6px; }
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #28c840; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+      .status-dot.running { background: #febc2e; animation: pulse 1.1s ease-in-out infinite; }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+      .toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); background: #2a2a2d; border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.9); padding: 10px 16px; border-radius: 10px; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,.4); opacity: 0; transition: opacity .2s, transform .2s; z-index: 100; pointer-events: none; }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+      .setup-banner { display: none; margin: 0 28px 12px; max-width: 760px; margin-left: auto; margin-right: auto; background: rgba(239,168,71,.12); border: 1px solid rgba(239,168,71,.35); color: #ffd9a0; border-radius: 12px; padding: 10px 14px; font-size: 13px; }
+      .setup-banner.show { display: block; }
+
+      /* ---- video gallery + modal ---- */
+      .video-row { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border-radius: 8px; cursor: pointer; font-size: 12.5px; color: rgba(255,255,255,.82); }
+      .video-row:hover { background: rgba(255,255,255,.06); }
+      .video-row .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .video-row .meta { font-size: 10.5px; color: rgba(255,255,255,.4); flex: 0 0 auto; }
+      .video-mode-tag { display: inline-block; font-size: 10px; background: rgba(107,140,255,.18); border: 1px solid rgba(107,140,255,.25); color: #a0b8ff; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
+      .video-modal { position: fixed; inset: 0; background: rgba(0,0,0,.82); display: none; align-items: center; justify-content: center; z-index: 200; }
+      .video-modal.open { display: flex; }
+      .video-modal .box { max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+      .video-modal video { max-width: 88vw; max-height: 78vh; border-radius: 12px; background: #000; }
+      .video-modal .cap { color: rgba(255,255,255,.8); font-size: 13px; font-family: ui-monospace, monospace; max-width: 80vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .video-modal .close { position: fixed; top: 20px; right: 24px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.12); border: none; color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; }
+      .video-modal .close:hover { background: rgba(255,255,255,.22); }
+      .video-modal .dl { font-size: 12.5px; color: #8aa6ff; cursor: pointer; text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <main class="desktop">
+      <section class="window">
+        <aside class="sidebar">
+          <div class="sidebar-inner">
+            <div class="traffic"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+
+            <div class="nav-item" id="nav-new" title="New conversation">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+              <span>New thread</span>
+            </div>
+            <div class="nav-item" id="nav-suggest" title="Ask GA to suggest tasks">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
+              <span>Suggest tasks</span>
+            </div>
+            <div class="nav-item" id="nav-skills" title="Skill tree (memory/SOPs)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/></svg>
+              <span>Skills</span>
+            </div>
+            <div class="nav-item" id="nav-video" title="Make a video with HyperFrames">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+              <span>Make video</span>
+            </div>
+
+            <div class="section-title">Threads</div>
+            <div class="scroll" id="sessions-scroll">
+              <div id="session-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px">Loading…</div>
+            </div>
+
+            <div class="section-title" id="skills-title">Skills · memory</div>
+            <div class="scroll" id="skills-scroll" style="max-height:180px">
+              <div id="skill-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px">—</div>
+            </div>
+
+            <div class="section-title" id="videos-title">Videos · HyperFrames</div>
+            <div class="scroll" id="videos-scroll" style="max-height:160px">
+              <div id="video-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px">—</div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="content">
+          <div class="topbar">
+            <div class="title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v1H3V7Z"/><path d="M3 8h18l-1.3 9.1A2 2 0 0 1 17.7 19H6.3a2 2 0 0 1-2-1.9L3 8Z"/></svg>
+              <span class="crumb" id="title">New thread</span>
+            </div>
+            <div class="toolbar">
+              <button id="btn-stop" title="Stop current task" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              </button>
+              <button id="btn-new" title="New conversation (clear context)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="setup-banner" id="setup-banner">⚠️ No LLM configured. Create <code>mykey.py</code> in the GenericAgent root with your API key, then restart <code>webui_codex.py</code>.</div>
+
+          <div class="messages" id="messages">
+            <div class="empty" id="empty">
+              <svg class="logo" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M32 7c6.7 0 12 4.7 12 10.5 0 .9-.1 1.8-.4 2.7 5 1.2 8.9 5.5 8.9 10.9 0 4.8-3 8.9-7.2 10.6.4 1.1.7 2.3.7 3.5 0 5.8-5.3 10.5-12 10.5-4 0-7.4-1.8-9.5-4.5-1 .4-2.2.5-3.3.5-6.7 0-12-4.7-12-10.5 0-3.7 2.1-6.9 5.3-8.8-.8-1.8-1.3-3.8-1.3-5.8C13.2 18 20 12 28 12c1.5 0 2.9.2 4.2.6C29 10.2 30.3 7 32 7Z"/>
+                <path d="M22 24c-2 1.6-3 4-3 6.7 0 4.6 3.5 8.3 8 8.3 2 0 3.9-.7 5.3-1.9"/>
+                <path d="M25 34c0 3.8 2.9 6.8 6.4 6.8 2.1 0 3.8-.8 5.4-2.4"/>
+                <path d="M28 43.3c2.4-1.2 4.5-3.2 6-5.8 1.6-2.8 2.5-6 2.5-9.6 0-2.9-.6-5.8-1.8-8.1"/>
+              </svg>
+              <div class="build-text">Let’s build</div>
+              <div class="pill" id="llm-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
+                <span id="llm-pill-label">—</span>
+                <svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                <div class="pill-menu" id="llm-menu"></div>
+              </div>
+              <div style="font-size:13px;color:rgba(255,255,255,.42);max-width:480px;text-align:center;line-height:1.6;margin-top:4px">
+                Ask anything — drive your computer, browse, code, automate. Each task the agent solves crystallizes into a Skill.<br>
+                <span style="opacity:.7">Slash cmds: <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/btw</code> <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/review</code> <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/resume</code></span>
+              </div>
+            </div>
+            <div class="stream" id="stream"></div>
+          </div>
+
+          <div class="composer">
+            <div class="composer-inner">
+              <div class="setup-banner" id="setup-banner-bottom" style="margin:0 0 8px"></div>
+              <div class="input-shell">
+                <textarea id="input" rows="1" placeholder="Ask anything  ·  ⏎ send  ·  ⇧⏎ newline"></textarea>
+                <div class="plus" id="btn-attach" title="Attach a file path for the agent to read">+</div>
+                <div class="send" id="btn-send" title="Send">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
+                </div>
+              </div>
+              <div class="attach-row" id="attach-row">
+                <input id="attach-input" placeholder="/absolute/path/to/file — inserted into the prompt for the agent to read" />
+              </div>
+              <div class="footer-row">
+                <div class="modes">
+                  <span class="mode active" data-mode="Local">Local</span>
+                  <span class="mode" data-mode="Worktree">Worktree</span>
+                  <span class="mode" data-mode="Cloud">Cloud</span>
+                </div>
+                <div class="branch">
+                  <span class="status-dot" id="status-dot"></span>
+                  <span id="branch-label">idle</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+    <div class="video-modal" id="video-modal">
+      <button class="close" id="video-close">&times;</button>
+      <div class="box">
+        <video id="video-player" controls autoplay></video>
+        <div class="cap" id="video-cap"></div>
+        <a class="dl" id="video-dl" download>⬇ download</a>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const state = { running: false, configured: true, llms: [], llmNo: 0, llmName: "—", sessionPath: null };
+
+    // ---------- tiny utils ----------
+    function toast(msg) {
+      const t = $("toast"); t.textContent = msg; t.classList.add("show");
+      clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2600);
+    }
+    async function api(path, opts) {
+      const res = await fetch(path, opts || {});
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) return { _status: res.status, ...(await res.json()) };
+      const txt = await res.text(); return { _status: res.status, _text: txt };
+    }
+    function esc(s) { return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+    function relTime(ms) {
+      const d = Math.floor(Date.now()/1000 - ms);
+      if (d < 60) return d + "s"; if (d < 3600) return Math.floor(d/60) + "m";
+      if (d < 86400) return Math.floor(d/3600) + "h"; return Math.floor(d/86400) + "d";
+    }
+    function autoGrow(el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 200) + "px"; }
+
+    // ---------- minimal markdown ----------
+    function md(src) {
+      src = (src || "").replace(/\r/g, "");
+      // pull out fenced code blocks first
+      const blocks = []; let i = 0;
+      src = src.replace(/```([\w+-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+        blocks.push('<pre><code>' + esc(code.replace(/\n$/, "")) + '</code></pre>'); return `\x00BLOCK${i++}\x00`;
+      });
+      // inline code
+      src = esc(src).replace(/`([^`\n]+)`/g, (_, c) => '<code>' + c + '</code>');
+      // tables (simple pipe tables)
+      src = src.replace(/((?:^\|.*\|\n)+)/gm, (tbl) => {
+        const rows = tbl.trim().split("\n").map(r => r.replace(/^\||\|$/g, "").split("|"));
+        if (rows.length < 2) return tbl;
+        const sep = rows[1].map(c => /^[\s:-]+$/.test(c)); if (!sep.every(Boolean)) return tbl;
+        const head = rows[0], body = rows.slice(2);
+        let h = "<table><thead><tr>" + head.map(c => "<th>" + c.trim() + "</th>").join("") + "</tr></thead><tbody>";
+        for (const r of body) h += "<tr>" + r.map(c => "<td>" + c.trim() + "</td>").join("") + "</tr>";
+        return h + "</tbody></table>";
+      });
+      const lines = src.split("\n"); let out = "", list = null;
+      const flush = () => { if (list) { out += `</${list}>`; list = null; } };
+      for (let raw of lines) {
+        const line = raw;
+        if (/^\x00BLOCK\d+\x00$/.test(line.trim())) { flush(); out += blocks[+line.trim().match(/\d+/)[0]]; continue; }
+        if (/^\s*$/.test(line)) { flush(); out += "\n"; continue; }
+        let m;
+        if (m = line.match(/^(#{1,3})\s+(.*)/)) { flush(); out += `<h${m[1].length}>${m[2]}</h${m[1].length}>`; continue; }
+        if (m = line.match(/^>\s?(.*)/)) { flush(); out += `<blockquote>${m[1]}</blockquote>`; continue; }
+        if (m = line.match(/^[-*]\s+(.*)/)) { if (list !== "ul") { flush(); out += "<ul>"; list = "ul"; } out += `<li>${m[1]}</li>`; continue; }
+        if (m = line.match(/^\d+\.\s+(.*)/)) { if (list !== "ol") { flush(); out += "<ol>"; list = "ol"; } out += `<li>${m[1]}</li>`; continue; }
+        if (/^(?:---|\*\*\*)\s*$/.test(line)) { flush(); out += "<hr>"; continue; }
+        out += line + " ";
+      }
+      flush();
+      // paragraphs
+      out = out.replace(/\n{2,}/g, "</p><p>").replace(/^\s+|\s+$/g, "");
+      out = "<p>" + out + "</p>";
+      // links
+      out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+      out = out.replace(/(^|[\s(])((?:https?:\/\/)[^\s<)]+)(?=[\s<)|]|$)/g, '$1<a href="$2" target="_blank" rel="noreferrer">$2</a>');
+      return out;
+    }
+
+    // ---------- turn folding + tool/file decoration ----------
+    const TURN_RE = /\*\*LLM Running \(Turn \d+\)\s*\.\.\.\*\*/g;
+    const TOOL_RE = /🛠️\s*Tool:\s*`([^`]+)`[^\n]*\n?/g;
+
+    function renderAssistant(container, rawText, streaming) {
+      container.innerHTML = "";
+      let text = (rawText || "").replace(/\r/g, "");
+      // strip thinking blocks (collapsed away for cleanliness)
+      text = text.replace(/<thinking>[\s\S]*?<\/thinking>/g, "");
+      // split into turns
+      const parts = text.split(TURN_RE);
+      // parts[0] = first turn body; subsequent entries alternate (the marker is consumed)
+      const turns = [];
+      if (parts.length === 1) {
+        turns.push({ n: 0, body: parts[0] });
+      } else {
+        turns.push({ n: 0, body: parts[0] });
+        for (let k = 1; k < parts.length; k++) turns.push({ n: k, body: parts[k] });
+      }
+      turns.forEach((t, idx) => {
+        const isLive = streaming && idx === turns.length - 1;
+        const collapsed = idx > 0 && !isLive;
+        const wrap = document.createElement("div");
+        wrap.className = "turn" + (collapsed ? " collapsed" : "");
+        if (idx > 0) {
+          const chip = document.createElement("div");
+          chip.className = "turn-chip" + (collapsed ? "" : " open");
+          chip.innerHTML = '<span class="tri">▶</span> Turn ' + idx;
+          chip.onclick = () => { const open = chip.classList.toggle("open"); wrap.classList.toggle("collapsed", !open); };
+          wrap.appendChild(chip);
+        }
+        const body = document.createElement("div");
+        body.className = "turn-body";
+        let bhtml = decorate(t.body);
+        body.innerHTML = '<div class="md">' + bhtml + '</div>';
+        wrap.appendChild(body);
+        container.appendChild(wrap);
+      });
+      if (!turns.some(t => (t.body || "").trim())) container.innerHTML = '<div class="md"><p style="opacity:.5">…</p></div>';
+    }
+
+    function decorate(text) {
+      // file references [FILE:path] -> chips
+      let out = text.replace(/\[FILE:([^\]]+)\]/g, (_, p) => {
+        const base = p.split(/[\\/]/).pop();
+        return `<span class="file-ref" data-path="${esc(p)}" title="${esc(p)}">📄 ${esc(base)}</span>`;
+      });
+      // tool call header lines -> chips
+      out = out.replace(TOOL_RE, (_, name) => `<div><span class="tool-chip">🛠 ${esc(name)}</span></div>`);
+      // summary highlight
+      out = out.replace(/<summary>([\s\S]*?)<\/summary>/g, (_, s) => `<blockquote><strong>summary</strong><br>${s}</blockquote>`);
+      // leftover raw tags
+      out = out.replace(/<\/?(?:thinking|summary|tool_use|file_content)>/g, "");
+      return out;
+    }
+
+    // ---------- bubbles ----------
+    function addBubble(role, content, opts) {
+      opts = opts || {};
+      const empty = $("empty"); if (empty) empty.style.display = "none";
+      const msg = document.createElement("div"); msg.className = "msg " + role;
+      const tag = document.createElement("div"); tag.className = "role-tag"; tag.textContent = role === "user" ? "you" : "agent"; if (role === "user") tag.style.alignSelf = "flex-end";
+      const bub = document.createElement("div"); bub.className = "bubble" + (opts.error ? " err-bubble" : "");
+      if (role === "user") { bub.textContent = content; }
+      else { bub.classList.add("content-host"); renderAssistant(bub, content, !!opts.streaming); if (opts.streaming) bub.classList.add("streaming"); }
+      msg.appendChild(tag); msg.appendChild(bub);
+      $("stream").appendChild(msg);
+      $("messages").scrollTop = $("messages").scrollHeight;
+      return bub;
+    }
+
+    // ---------- status / sidebar ----------
+    function setRunning(on) {
+      state.running = on;
+      $("status-dot").classList.toggle("running", on);
+      $("branch-label").textContent = on ? "running" : "idle";
+      $("btn-stop").disabled = !on;
+      const send = $("btn-send"); send.classList.toggle("stop", on);
+      send.title = on ? "Stop" : "Send";
+      send.innerHTML = on
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19V5"/><path d="m6 11 6-6 6 6"/></svg>';
+    }
+
+    async function loadStatus() {
+      const s = await api("/api/status");
+      state.configured = s.configured !== false;
+      $("setup-banner").classList.toggle("show", !state.configured);
+      $("setup-banner-bottom").classList.toggle("show", !state.configured);
+      if (!state.configured) {
+        $("setup-banner-bottom").innerHTML = '⚠️ No LLM configured — set <code>mykey.py</code> and restart.';
+      }
+      state.llms = s.llms || []; state.llmNo = s.llm_no; state.llmName = s.llm_name || "—";
+      $("llm-pill-label").textContent = state.llmName;
+      $("title").textContent = s.log ? "session · " + s.log.replace("model_responses_", "") : "New thread";
+      setRunning(!!s.running);
+      renderLlmMenu();
+    }
+
+    function renderLlmMenu() {
+      const menu = $("llm-menu"); menu.innerHTML = "";
+      if (!state.llms.length) { menu.innerHTML = '<div class="hint">no LLM configured</div>'; return; }
+      state.llms.forEach(l => {
+        const it = document.createElement("div");
+        it.className = "item" + (l.idx === state.llmNo ? " active" : "");
+        it.innerHTML = '<span class="check">✓</span><span>' + esc(l.name) + '</span>';
+        it.onclick = async (e) => { e.stopPropagation(); menu.classList.remove("open"); await switchLlm(l.idx); };
+        menu.appendChild(it);
+      });
+    }
+
+    async function switchLlm(idx) {
+      const r = await api("/api/llm", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ idx }) });
+      if (r.error) { toast("LLM switch failed: " + r.error); return; }
+      state.llmNo = r.llm_no; state.llmName = r.llm_name; state.llms = r.llms || state.llms;
+      $("llm-pill-label").textContent = state.llmName; renderLlmMenu(); toast("LLM → " + state.llmName);
+    }
+
+    async function loadSessions() {
+      const r = await api("/api/sessions"); const list = $("session-list");
+      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">No sessions yet</div>'; return; }
+      list.innerHTML = "";
+      r.items.slice(0, 30).forEach((s, i) => {
+        const row = document.createElement("div"); row.className = "thread" + (s.current ? " active" : "");
+        row.innerHTML = (s.current ? '<span class="dot"></span>' : "") + '<span class="label">' + esc(s.preview || s.name) + '</span><span class="meta">' + s.rounds + "r · " + relTime(s.mtime) + '</span>';
+        row.title = s.path;
+        row.onclick = () => continueSession(i + 1, s);
+        list.appendChild(row);
+      });
+    }
+
+    async function loadSkills() {
+      const r = await api("/api/skills"); const list = $("skill-list");
+      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">No skills yet</div>'; return; }
+      list.innerHTML = "";
+      r.items.slice(0, 40).forEach(s => {
+        const row = document.createElement("div"); row.className = "skill-row";
+        row.innerHTML = '<span>' + (s.is_dir ? "📁" : "📄") + '</span><span class="label">' + esc(s.name) + '</span>';
+        row.title = s.path; list.appendChild(row);
+      });
+    }
+
+    // ---------- video gallery ----------
+    async function loadVideos() {
+      const r = await api("/api/videos"); const list = $("video-list");
+      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">No renders yet</div>'; return; }
+      list.innerHTML = "";
+      r.items.slice(0, 20).forEach(v => {
+        const row = document.createElement("div"); row.className = "video-row";
+        row.innerHTML = '<span>🎬</span><span class="label">' + esc(v.name) + '</span><span class="meta">' + relTime(v.mtime*1000) + '</span>';
+        row.title = v.path; row.onclick = () => openVideo(v); list.appendChild(row);
+      });
+    }
+    function openVideo(v) {
+      $("video-player").src = "/api/video/" + encodeURIComponent(v.path);
+      $("video-cap").textContent = v.name + "  ·  " + (v.size/1024/1024).toFixed(1) + " MB";
+      $("video-dl").href = "/api/video/" + encodeURIComponent(v.path);
+      $("video-dl").download = v.name;
+      $("video-modal").classList.add("open");
+    }
+    $("video-close").onclick = () => { $("video-modal").classList.remove("open"); $("video-player").pause(); $("video-player").src=""; };
+    $("video-modal").onclick = (e) => { if (e.target === $("video-modal")) $("video-close").click(); };
+
+    // ---------- make video ----------
+    function makeVideo() {
+      const ta = $("input");
+      ta.value = ""; autoGrow(ta);
+      ta.placeholder = "Describe the video you want — e.g. \"a 15s product launch video for my SaaS, 16:9, with captions\"";
+      ta.focus();
+      state.videoMode = true;
+      toast("HyperFrames video mode — type your video idea and press Enter");
+    }
+
+    // ---------- actions ----------
+    async function send() {
+      if (state.running) { await stop(); return; }
+      const ta = $("input"); const text = ta.value.trim(); if (!text) return;
+      if (!state.configured) { toast("No LLM configured — set mykey.py"); return; }
+      const attach = $("attach-input").value.trim();
+      const full = attach ? text + "\n\n（参考文件：" + attach + "）" : text;
+      ta.value = ""; autoGrow(ta); $("attach-row").classList.remove("show"); $("attach-input").value = "";
+      addBubble("user", full);
+      const bub = addBubble("assistant", "", { streaming: true });
+      setRunning(true);
+
+      const isBtw = /^\/btw(\s|$)/.test(text);
+      if (isBtw) {
+        const q = text.replace(/^\/btw\s*/, "");
+        const r = await api("/api/btw", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ q }) });
+        bub.classList.remove("streaming");
+        if (r.error) { bub.classList.add("err-bubble"); renderAssistant(bub, r.error, false); }
+        else renderAssistant(bub, r.text || "*(empty)*", false);
+        setRunning(false); loadSessions(); return;
+      }
+
+      const isVideo = state.videoMode;
+      state.videoMode = false;
+      ta.placeholder = "Ask anything  ·  ⏎ send  ·  ⇧⏎ newline";
+
+      // /video <desc> slash command → set video mode for this turn
+      const videoCmd = text.match(/^\/video(\s+([\s\S]+))?$/);
+      const useVideo = isVideo || !!videoCmd;
+      const sendText = videoCmd ? (videoCmd[2] || "").trim() : full;
+      if (videoCmd && !sendText) { toast("Usage: /video <description>"); setRunning(false); return; }
+
+      try {
+        const res = await fetch("/api/chat", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ text: sendText, video: useVideo }) });
+        if (res.status === 409) { const j = await res.json(); bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, j.error || "agent busy", false); setRunning(false); return; }
+        if (!res.ok || !res.body) { const t = await res.text(); bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, t || ("HTTP " + res.status), false); setRunning(false); return; }
+        const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = ""; let live = "";
+        while (true) {
+          const { value, done } = await reader.read(); if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let nl;
+          while ((nl = buf.indexOf("\n\n")) >= 0) {
+            const chunk = buf.slice(0, nl); buf = buf.slice(nl + 2);
+            const line = chunk.replace(/^data:\s*/, "").trim(); if (!line) continue;
+            let ev; try { ev = JSON.parse(line); } catch { continue; }
+            if (ev.type === "delta") { live += ev.text; renderAssistant(bub, live, true); $("messages").scrollTop = $("messages").scrollHeight; }
+            else if (ev.type === "done") {
+              live = ev.text || live; bub.classList.remove("streaming"); renderAssistant(bub, live, false);
+              if (ev.files && ev.files.length) {
+                const fbox = document.createElement("div"); fbox.style.marginTop = "8px";
+                fbox.innerHTML = '<span style="font-size:11px;color:rgba(255,255,255,.4)">produced: </span>' + ev.files.map(p => { const b = p.split(/[\\/]/).pop(); return `<span class="file-ref" data-path="${esc(p)}" title="${esc(p)}">📄 ${esc(b)}</span>`; }).join(" ");
+                bub.appendChild(fbox);
+              }
+            } else if (ev.type === "error") { bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, ev.message || "error", false); }
+          }
+        }
+      } catch (e) { bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, "network: " + e.message, false); }
+      setRunning(false); loadStatus(); loadSessions(); loadVideos();
+    }
+
+    async function stop() { await api("/api/stop", { method: "POST" }); toast("stop signal sent"); setRunning(false); }
+    async function newThread() {
+      const r = await api("/api/new", { method: "POST" });
+      $("stream").innerHTML = ""; $("empty").style.display = ""; $("title").textContent = "New thread";
+      toast(r.message || "new conversation"); loadStatus(); loadSessions();
+    }
+    async function continueSession(idx, sess) {
+      const r = await api("/api/continue", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ idx }) });
+      if (r.error) { toast("restore failed: " + r.error); return; }
+      $("stream").innerHTML = ""; $("empty").style.display = "none";
+      // replay bubbles
+      if (r.path) {
+        const m = await api("/api/messages?path=" + encodeURIComponent(r.path));
+        (m.items || []).forEach(it => addBubble(it.role, it.content || ""));
+      } else { addBubble("assistant", r.message || "restored", {}); }
+      $("title").textContent = "session · " + (sess.name || "").replace("model_responses_", "");
+      toast(r.message || "session restored"); loadStatus(); loadSessions();
+    }
+
+    // ---------- wiring ----------
+    $("btn-send").onclick = send;
+    $("btn-stop").onclick = stop;
+    $("btn-new").onclick = newThread;
+    $("nav-new").onclick = newThread;
+    $("nav-suggest").onclick = () => { $("input").value = "Following the planning section of your autonomous SOP, analyze my situation and generate a batch of TODOs that will interest me."; autoGrow($("input")); $("input").focus(); };
+    $("nav-skills").onclick = () => { $("skills-scroll").scrollTop = 0; loadSkills(); };
+    $("nav-video").onclick = makeVideo;
+
+    const pill = $("llm-pill");
+    pill.onclick = (e) => { if (e.target.closest(".pill-menu")) return; $("llm-menu").classList.toggle("open"); };
+    document.addEventListener("click", (e) => { if (!e.target.closest("#llm-pill")) $("llm-menu").classList.remove("open"); });
+
+    $("btn-attach").onclick = () => { const r = $("attach-row"); r.classList.toggle("show"); if (r.classList.contains("show")) $("attach-input").focus(); };
+    $("attach-input").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("input").focus(); } });
+
+    document.querySelectorAll(".mode").forEach(m => m.onclick = () => {
+      if (m.dataset.mode !== "Local") { toast(m.dataset.mode + " mode is visual only — Local drives the agent"); return; }
+      document.querySelectorAll(".mode").forEach(x => x.classList.remove("active")); m.classList.add("active");
+    });
+
+    const ta = $("input");
+    ta.addEventListener("input", () => autoGrow(ta));
+    ta.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+
+    document.addEventListener("click", e => {
+      const fr = e.target.closest(".file-ref");
+      if (fr) { navigator.clipboard && navigator.clipboard.writeText(fr.dataset.path); toast("copied path: " + fr.dataset.path); }
+    });
+
+    // boot
+    (async () => {
+      await loadStatus(); loadSessions(); loadSkills(); loadVideos();
+      setInterval(loadStatus, 4000); setInterval(loadSessions, 15000); setInterval(loadVideos, 20000);
+    })();
+    </script>
+  </body>
+</html>

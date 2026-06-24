@@ -1,0 +1,14 @@
+{
+  "llm1": {
+    "apikey": "sk-YOUR-API-KEY-HERE",
+    "apibase": "https://api.openai.com",
+    "model": "gpt-4o",
+    "name": "GPT-4o"
+  },
+  "llm2": {
+    "apikey": "sk-YOUR-DEEPSEEK-KEY",
+    "apibase": "https://api.deepseek.com",
+    "model": "deepseek-chat",
+    "name": "DeepSeek"
+  }
+}
