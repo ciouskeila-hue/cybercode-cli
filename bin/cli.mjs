@@ -77,8 +77,8 @@ ${c("bold", "ATTRIBUTION")}
 
 // ---- Find Python 3.11+ ----
 function findPython() {
-  const candidates = process.env.WEBUI_CODEX_PYTHON
-    ? [process.env.WEBUI_CODEX_PYTHON]
+  const candidates = process.env.CYBERCODE_PYTHON
+    ? [process.env.CYBERCODE_PYTHON]
     : ["python3", "python3.12", "python3.11", "python"];
 
   for (const cmd of candidates) {
@@ -95,7 +95,7 @@ function findPython() {
   }
 
   console.error(c("red", "✗ Python 3.11+ not found."));
-  console.error(c("dim", "  Install Python 3.11 or 3.12, or set WEBUI_CODEX_PYTHON env var."));
+  console.error(c("dim", "  Install Python 3.11 or 3.12, or set CYBERCODE_PYTHON env var."));
   console.error(c("dim", "  Download: https://www.python.org/downloads/"));
   process.exit(1);
 }
@@ -227,7 +227,7 @@ async function launchWebUI(rawArgv) {
     console.log();
   }
 
-  const pyArgs = [join(workDir, "webui_codex.py"), "--port", String(port), "--host", args.host, "--llm_no", String(args.llm)];
+  const pyArgs = [join(workDir, "cybercodewebui.py"), "--port", String(port), "--host", args.host, "--llm_no", String(args.llm)];
   const child = spawn(python, pyArgs, { cwd: workDir, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PYTHONUNBUFFERED: "1" } });
   child.stdout.on("data", (data) => process.stdout.write(data));
   child.stderr.on("data", (data) => process.stderr.write(c("dim", data.toString())));

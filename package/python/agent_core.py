@@ -359,7 +359,7 @@ def tool_web_scan(url, text_only=True):
 
 def tool_web_execute_js(script, switch_tab_id=None):
     """Execute JS in browser. Requires TMWebDriver (not bundled)."""
-    return {"status": "error", "msg": "Browser JS execution requires TMWebDriver. To set up: install the Chrome extension from the GenericAgent repo's assets/tmwd_cdp_bridge/ directory, or use web_scan for basic HTTP fetching."}
+    return {"status": "error", "msg": "Browser JS execution requires TMWebDriver. To set up: install the Chrome extension from the tmwd_cdp_bridge/ directory, or use web_scan for basic HTTP fetching."}
 
 
 def tool_ask_user(question, candidates=None):
@@ -894,6 +894,7 @@ class Agent:
         self.llmclient = None
         self._llm_clients = []
         self._llm_names = []
+        self._llm_configs = []
         self._load_llms()
 
     def _load_llms(self):
@@ -904,15 +905,92 @@ class Agent:
             return
         self._llm_clients = []
         self._llm_names = []
+        self._llm_configs = []
         for k, cfg in mykeys.items():
             try:
                 client = LLMClient(cfg)
                 self._llm_clients.append(client)
                 self._llm_names.append(cfg.get("name", cfg.get("model", k)))
+                self._llm_configs.append(dict(cfg))
             except Exception as e:
                 print(f"[agent_core] Failed to init LLM '{k}': {e}")
         if self._llm_clients:
             self.llmclient = self._llm_clients[0]
+
+    def _mykey_path(self):
+        """Return the path to mykey.json (create location if not exists)."""
+        for search_dir in [SCRIPT_DIR, os.getcwd()]:
+            p = os.path.join(search_dir, "mykey.json")
+            if os.path.exists(p):
+                return p
+        return os.path.join(SCRIPT_DIR, "mykey.json")
+
+    def _save_mykeys(self):
+        """Persist current LLM configs to mykey.json."""
+        data = {}
+        for i, cfg in enumerate(self._llm_configs):
+            data[f"llm{i+1}"] = cfg
+        path = self._mykey_path()
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[agent_core] Failed to save mykey.json: {e}")
+
+    def add_llm(self, cfg):
+        """Add a new LLM at runtime and persist to mykey.json.
+        cfg must contain: name, model, apibase, apikey, remark (optional).
+        Returns the new LLM index."""
+        with self.lock:
+            client = LLMClient(cfg)
+            self._llm_clients.append(client)
+            self._llm_names.append(cfg.get("name", cfg.get("model", "")))
+            self._llm_configs.append(dict(cfg))
+            self._save_mykeys()
+            return len(self._llm_clients) - 1
+
+    def update_llm(self, idx, cfg):
+        """Update an existing LLM at index idx and persist.
+        Returns idx."""
+        with self.lock:
+            if not (0 <= idx < len(self._llm_clients)):
+                raise Exception("invalid LLM index")
+            client = LLMClient(cfg)
+            self._llm_clients[idx] = client
+            self._llm_names[idx] = cfg.get("name", cfg.get("model", ""))
+            self._llm_configs[idx] = dict(cfg)
+            if self.llm_no == idx:
+                self.llmclient = client
+            self._save_mykeys()
+            return idx
+
+    def delete_llm(self, idx):
+        """Delete LLM at index idx and persist. Cannot delete the last one."""
+        with self.lock:
+            if not (0 <= idx < len(self._llm_clients)):
+                raise Exception("invalid LLM index")
+            if len(self._llm_clients) <= 1:
+                raise Exception("cannot delete the last LLM")
+            self._llm_clients.pop(idx)
+            self._llm_names.pop(idx)
+            self._llm_configs.pop(idx)
+            if self.llm_no >= len(self._llm_clients):
+                self.llm_no = 0
+            self.llmclient = self._llm_clients[self.llm_no] if self._llm_clients else None
+            self._save_mykeys()
+            return self.llm_no
+
+    def llm_remark(self, idx):
+        """Return the remark string for LLM at idx."""
+        if 0 <= idx < len(self._llm_configs):
+            return self._llm_configs[idx].get("remark", "")
+        return ""
+
+    def get_llm_detail(self, idx):
+        """Return the full config dict for LLM at idx (for editing)."""
+        if 0 <= idx < len(self._llm_configs):
+            return dict(self._llm_configs[idx])
+        return {}
 
     def list_llms(self):
         """Return [(index, name, is_active), ...]"""

@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-webui_codex — a Codex-dark–styled web frontend with a self-contained agent.
+cybercodewebui — a Codex-dark–styled web frontend with a self-contained agent.
 
-Standalone: no GenericAgent dependency. The agent core (agent_core.py) is
+Standalone: self-contained agent core (agent_core.py) is
 bundled. Only Python stdlib + `requests` are needed.
 
 Usage:
-    python webui_codex.py                          # http://127.0.0.1:18600
-    python webui_codex.py --port 9000 --host 0.0.0.0
+    python cybercodewebui.py                          # http://127.0.0.1:18600
+    python cybercodewebui.py --port 9000 --host 0.0.0.0
 
 API:
   GET  /                         -> the web UI
@@ -49,7 +49,7 @@ from agent_core import (
     smart_format, TEMP_DIR, ROOT_DIR,
 )
 
-HTML_PATH = os.path.join(HERE, "webui_codex.html")
+HTML_PATH = os.path.join(HERE, "cybercodewebui.html")
 SKILLS_DIR = os.path.join(HERE, "skills")
 MEMORY_DIR = os.path.join(HERE, "memory")
 DEFAULT_HOST = "127.0.0.1"
@@ -102,7 +102,7 @@ def get_agent():
         if _agent is None:
             _agent = Agent()
             if _agent.llmclient is None:
-                print("[webui_codex] WARNING: no LLM configured — create mykey.py or mykey.json")
+                print("[cybercodewebui] WARNING: no LLM configured — create mykey.py or mykey.json")
             _agent.inc_out = True
             threading.Thread(target=_agent.run, daemon=True).start()
         return _agent
@@ -255,7 +255,7 @@ def _videos_list():
 # HTTP handler
 # ---------------------------------------------------------------------------
 class Handler(BaseHTTPRequestHandler):
-    server_version = "webui_codex/2.0"
+    server_version = "cybercodewebui/2.0"
     protocol_version = "HTTP/1.1"
 
     def _send_json(self, obj, code=200):
@@ -306,6 +306,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"items": _videos_list()})
             if path.startswith("/api/video/"):
                 return self._serve_video(unquote(path[len("/api/video/"):]))
+            if path == "/api/llm/get":
+                return self._api_llm_get()
             self._send_json({"error": "not found"}, 404)
         except Exception as e:
             traceback.print_exc()
@@ -318,6 +320,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._api_chat()
             if path == "/api/llm":
                 return self._api_llm()
+            if path == "/api/llm/add":
+                return self._api_llm_add()
+            if path == "/api/llm/update":
+                return self._api_llm_update()
+            if path == "/api/llm/delete":
+                return self._api_llm_delete()
             if path == "/api/stop":
                 get_agent().abort()
                 return self._send_json({"ok": True})
@@ -340,7 +348,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(HTML_PATH, "rb") as f:
                 body = f.read()
         except OSError:
-            body = b'<!doctype html><title>webui_codex</title><pre>webui_codex.html not found</pre>'
+            body = b'<!doctype html><title>cybercodewebui</title><pre>cybercodewebui.html not found</pre>'
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -361,7 +369,7 @@ class Handler(BaseHTTPRequestHandler):
             "configured": configured,
             "llm_no": agent.llm_no,
             "llm_name": name,
-            "llms": [{"idx": i, "name": n, "active": a} for i, n, a in llms],
+            "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
             "history": (agent.history or [])[-40:],
             "log": os.path.basename(agent.log_path or ""),
         })
@@ -444,7 +452,93 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json({
             "ok": True, "llm_no": agent.llm_no,
             "llm_name": agent.get_llm_name(),
-            "llms": [{"idx": i, "name": n, "active": a} for i, n, a in llms],
+            "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
+        })
+
+    def _api_llm_get(self):
+        """Return the full config for a single LLM (for the edit modal)."""
+        agent = get_agent()
+        qs = parse_qs(urlparse(self.path).query)
+        try:
+            idx = int((qs.get("idx") or ["0"])[0])
+        except ValueError:
+            return self._send_json({"error": "invalid idx"}, 400)
+        cfg = agent.get_llm_detail(idx)
+        if not cfg:
+            return self._send_json({"error": "LLM not found"}, 404)
+        self._send_json({"cfg": cfg})
+
+    def _build_llm_cfg(self, data):
+        """Build a clean LLM config dict from request data."""
+        cfg = {
+            "name": (data.get("name") or "").strip(),
+            "model": (data.get("model") or "").strip(),
+            "apibase": (data.get("apibase") or "").strip(),
+            "apikey": (data.get("apikey") or "").strip(),
+            "remark": (data.get("remark") or "").strip(),
+        }
+        if not cfg["name"]:
+            raise ValueError("显示名称不能为空")
+        if not cfg["apibase"]:
+            raise ValueError("API 地址不能为空")
+        if not cfg["apikey"]:
+            raise ValueError("API 密钥不能为空")
+        if not cfg["model"]:
+            cfg["model"] = cfg["name"]
+        return cfg
+
+    def _api_llm_add(self):
+        data = self._read_json()
+        agent = get_agent()
+        try:
+            cfg = self._build_llm_cfg(data)
+            idx = agent.add_llm(cfg)
+        except ValueError as e:
+            return self._send_json({"error": str(e)})
+        except Exception as e:
+            return self._send_json({"error": str(e)})
+        llms = agent.list_llms()
+        self._send_json({
+            "ok": True, "llm_no": agent.llm_no, "added_idx": idx,
+            "llm_name": agent.get_llm_name(),
+            "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
+        })
+
+    def _api_llm_update(self):
+        data = self._read_json()
+        idx = data.get("idx")
+        if idx is None:
+            return self._send_json({"error": "missing idx"})
+        agent = get_agent()
+        try:
+            cfg = self._build_llm_cfg(data)
+            agent.update_llm(int(idx), cfg)
+        except ValueError as e:
+            return self._send_json({"error": str(e)})
+        except Exception as e:
+            return self._send_json({"error": str(e)})
+        llms = agent.list_llms()
+        self._send_json({
+            "ok": True, "llm_no": agent.llm_no,
+            "llm_name": agent.get_llm_name(),
+            "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
+        })
+
+    def _api_llm_delete(self):
+        data = self._read_json()
+        idx = data.get("idx")
+        if idx is None:
+            return self._send_json({"error": "missing idx"})
+        agent = get_agent()
+        try:
+            agent.delete_llm(int(idx))
+        except Exception as e:
+            return self._send_json({"error": str(e)})
+        llms = agent.list_llms()
+        self._send_json({
+            "ok": True, "llm_no": agent.llm_no,
+            "llm_name": agent.get_llm_name(),
+            "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
         })
 
     def _api_continue(self):
@@ -544,7 +638,7 @@ class Handler(BaseHTTPRequestHandler):
 # Main
 # ---------------------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(description="webui_codex — self-contained Codex-dark agent web UI")
+    parser = argparse.ArgumentParser(description="cybercodewebui — self-contained Codex-dark agent web UI")
     parser.add_argument("--host", default=DEFAULT_HOST)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--llm_no", type=int, default=0, help="LLM index to start on")
@@ -555,7 +649,7 @@ def main():
         try:
             agent.next_llm(args.llm_no)
         except Exception as e:
-            print(f"[webui_codex] llm switch failed: {e}")
+            print(f"[cybercodewebui] llm switch failed: {e}")
 
     # Ensure memory + temp dirs exist
     os.makedirs(MEMORY_DIR, exist_ok=True)
@@ -575,9 +669,10 @@ def main():
         while True:
             time.sleep(3600)
     except KeyboardInterrupt:
-        print("\n[webui_codex] shutting down.")
+        print("\n[cybercodewebui] shutting down.")
         server.shutdown()
 
 
 if __name__ == "__main__":
     main()
+

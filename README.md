@@ -1,4 +1,4 @@
-# webui_codex — Codex-dark Web UI with a Built-in Self-Evolving Agent
+# cybercodewebui — Codex-dark Web UI with a Built-in Self-Evolving Agent
 
 A standalone, self-contained web UI + agent framework styled after the
 Codex-dark interface. **No external agent dependency** — the entire agent
@@ -37,8 +37,8 @@ copyright notice as required by its license terms.
 
 ## What it is
 
-`webui_codex.py` boots a self-contained `Agent` (from `agent_core.py`), serves
-`webui_codex.html` at `/`, and exposes a JSON + SSE API the page talks to.
+`cybercodewebui.py` boots a self-contained `Agent` (from `agent_core.py`), serves
+`cybercodewebui.html` at `/`, and exposes a JSON + SSE API the page talks to.
 The UI keeps the Codex-dark look — blue radial-gradient desktop, traffic-light
 window chrome, dark sidebar with threads + skills, centered *Let's build*
 empty state, pill LLM switcher, rounded composer with Local/Worktree/Cloud
@@ -52,14 +52,14 @@ HTTP client); everything else uses the Python stdlib.
 ## Files
 
 ```
-webui-codex/
+cybercodewebui/
 ├── package.json       # npm package config (bin, files, metadata)
 ├── bin/
 │   └── cli.mjs        # Node.js launcher (finds Python, bootstraps, opens browser)
 ├── python/
 │   ├── agent_core.py       # Self-contained agent core (LLM client + loop + 9 tools + memory)
-│   ├── webui_codex.py      # stdlib HTTP server + SSE + API
-│   └── webui_codex.html    # Codex-dark UI (single file, no build step)
+│   ├── cybercodewebui.py      # stdlib HTTP server + SSE + API
+│   └── cybercodewebui.html    # Codex-dark UI (single file, no build step)
 ├── skills/             # HyperFrames video skills (12 files, from HeyGen)
 ├── templates/
 │   └── mykey_template.json  # API key template (auto-copied on first run)
@@ -88,7 +88,7 @@ EOF
 pip install requests
 
 # 3. Run
-python python/webui_codex.py                 # http://127.0.0.1:18600
+python python/cybercodewebui.py                 # http://127.0.0.1:18600
 ```
 
 ## Supported LLM providers

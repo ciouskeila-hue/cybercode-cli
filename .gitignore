@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+python/mykey.json
+python/mykey.py
+python/memory/
+node_modules/
+*.tgz
+.DS_Store
+Thumbs.db
+.env
