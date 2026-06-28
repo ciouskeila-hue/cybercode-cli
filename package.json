@@ -1,6 +1,6 @@
 {
   "name": "cybercode-cli",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Codex-dark web UI with a built-in self-evolving agent + HyperFrames video skills",
   "publishConfig": {
     "access": "public"
@@ -11,7 +11,8 @@
   },
   "files": [
     "bin/",
-    "python/",
+    "python/*.py",
+    "python/*.html",
     "skills/",
     "templates/",
     "LICENSE",
