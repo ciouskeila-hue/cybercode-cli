@@ -33,10 +33,13 @@ import json
 import os
 import queue as Q
 import re
+import ssl
 import sys
 import threading
 import time
 import traceback
+import urllib.request
+import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -54,6 +57,12 @@ SKILLS_DIR = os.path.join(HERE, "skills")
 MEMORY_DIR = os.path.join(HERE, "memory")
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 18600
+
+# l0veyou backend connection
+L0VEYOU_BASE = os.environ.get("L0VEYOU_BASE", "https://l0veyou.com").rstrip("/")
+L0VEYOU_SSL_CTX = ssl.create_default_context()
+L0VEYOU_SSL_CTX.check_hostname = False
+L0VEYOU_SSL_CTX.verify_mode = ssl.CERT_NONE
 
 FILE_HINT = "If you need to show files to user, use [FILE:filepath] in your response."
 
@@ -308,6 +317,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self._serve_video(unquote(path[len("/api/video/"):]))
             if path == "/api/llm/get":
                 return self._api_llm_get()
+            # l0veyou proxy routes
+            if path == "/proxy/auth/providers":
+                return self._proxy_get("/auth/providers")
+            if path == "/proxy/auth/session":
+                return self._proxy_get_auth("/auth/session")
+            if path == "/proxy/v1/models":
+                return self._proxy_get_auth("/v1/models")
+            if path == "/auth/callback":
+                return self._serve_html()
+            if path.startswith("/proxy/api/creation-tasks"):
+                return self._proxy_get_auth(path.replace("/proxy", ""))
+            if path.startswith("/proxy/images/") or path.startswith("/proxy/temp-images/") or path.startswith("/proxy/ltx_video/") or path.startswith("/proxy/image-thumbnails/") or path.startswith("/proxy/image-references/"):
+                return self._proxy_file(path.replace("/proxy", ""))
             self._send_json({"error": "not found"}, 404)
         except Exception as e:
             traceback.print_exc()
@@ -337,6 +359,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json({"ok": True, "message": "New conversation started."})
             if path == "/api/continue":
                 return self._api_continue()
+            # l0veyou proxy routes
+            if path == "/proxy/auth/login":
+                return self._proxy_post("/auth/login")
+            if path == "/proxy/auth/logout":
+                return self._proxy_post("/auth/logout")
+            if path == "/proxy/auth/register":
+                return self._proxy_post("/auth/register")
+            if path == "/proxy/v1/chat/completions":
+                return self._proxy_chat_completions()
+            if path == "/api/auth/configure-llm":
+                return self._api_configure_llm()
+            if path == "/proxy/v1/images/generations":
+                return self._proxy_post_auth("/v1/images/generations")
+            if path == "/proxy/v1/responses":
+                return self._proxy_post_auth("/v1/responses")
+            if path == "/proxy/api/creation-tasks/image-generations":
+                return self._proxy_post_auth("/api/creation-tasks/image-generations")
+            if path == "/proxy/api/creation-tasks/chat-completions":
+                return self._proxy_post_auth("/api/creation-tasks/chat-completions")
+            if path.startswith("/proxy/api/creation-tasks/") and path.endswith("/cancel"):
+                return self._proxy_post_auth(path.replace("/proxy", ""))
             self._send_json({"error": "not found"}, 404)
         except Exception as e:
             traceback.print_exc()
@@ -559,6 +602,273 @@ class Handler(BaseHTTPRequestHandler):
             prefix = "[USER]: " if m["role"] == "user" else "[Agent] "
             agent.history.append(prefix + m["content"][:200])
         self._send_json({"ok": True, "message": f"Restored {len(msgs)} messages.", "path": sess["path"]})
+
+
+    # ---- l0veyou proxy methods ----
+    def _get_auth_token(self):
+        """Extract Bearer token from Authorization header."""
+        auth = self.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            return auth[7:]
+        return ""
+
+    def _proxy_get(self, l0veyou_path):
+        """Proxy a GET request to l0veyou (no auth required)."""
+        url = f"{L0VEYOU_BASE}{l0veyou_path}"
+        try:
+            req = urllib.request.Request(url, method="GET")
+            req.add_header("User-Agent", "CyberCode/1.0")
+            with urllib.request.urlopen(req, context=L0VEYOU_SSL_CTX, timeout=15) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            body = e.read()
+            self.send_response(e.code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception as e:
+            self._send_json({"error": str(e)}, 502)
+
+    def _proxy_get_auth(self, l0veyou_path):
+        """Proxy a GET request to l0veyou with Bearer token. Errors are sanitized."""
+        token = self._get_auth_token()
+        if not token:
+            return self._send_json({"error": "missing token"}, 401)
+        url = f"{L0VEYOU_BASE}{l0veyou_path}"
+        try:
+            req = urllib.request.Request(url, method="GET")
+            req.add_header("User-Agent", "CyberCode/1.0")
+            req.add_header("Authorization", f"Bearer {token}")
+            with urllib.request.urlopen(req, context=L0VEYOU_SSL_CTX, timeout=15) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            err_body = e.read()
+            print(f"[proxy] GET {l0veyou_path} -> {e.code}: {err_body[:200]}", file=sys.stderr, flush=True)
+            if l0veyou_path == "/v1/models":
+                self._send_json({"object": "list", "data": []}, 200)
+            else:
+                self._send_json({"error": {"message": "当前用户较多，请稍后再试", "type": "server_busy"}}, 200)
+        except Exception as e:
+            print(f"[proxy] GET {l0veyou_path} exception: {e}", file=sys.stderr, flush=True)
+            if l0veyou_path == "/v1/models":
+                self._send_json({"object": "list", "data": []}, 200)
+            else:
+                self._send_json({"error": {"message": "当前用户较多，请稍后再试", "type": "server_busy"}}, 200)
+
+    def _proxy_post(self, l0veyou_path):
+        """Proxy a POST request to l0veyou. Auth errors preserved, network errors sanitized."""
+        body_data = self._read_json()
+        token = self._get_auth_token()
+        url = f"{L0VEYOU_BASE}{l0veyou_path}"
+        try:
+            data = json.dumps(body_data).encode("utf-8")
+            req = urllib.request.Request(url, data=data, method="POST")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("User-Agent", "CyberCode/1.0")
+            if token:
+                req.add_header("Authorization", f"Bearer {token}")
+            with urllib.request.urlopen(req, context=L0VEYOU_SSL_CTX, timeout=15) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            # Auth endpoints: preserve error codes for login/register
+            body = e.read()
+            self.send_response(e.code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception as e:
+            print(f"[proxy] POST {l0veyou_path} exception: {e}", file=sys.stderr, flush=True)
+            self._send_json({"error": {"message": "当前用户较多，请稍后再试", "type": "server_busy"}}, 200)
+
+    def _proxy_post_auth(self, l0veyou_path):
+        """Proxy a POST request to l0veyou with Bearer token. Errors are sanitized."""
+        body_data = self._read_json()
+        token = self._get_auth_token()
+        if not token:
+            return self._send_json({"error": "missing token"}, 401)
+        url = f"{L0VEYOU_BASE}{l0veyou_path}"
+        try:
+            data = json.dumps(body_data).encode("utf-8")
+            req = urllib.request.Request(url, data=data, method="POST")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("User-Agent", "CyberCode/1.0")
+            req.add_header("Authorization", f"Bearer {token}")
+            with urllib.request.urlopen(req, context=L0VEYOU_SSL_CTX, timeout=120) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                self.send_header("Content-Type", resp.headers.get("Content-Type", "application/json; charset=utf-8"))
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            err_body = e.read()
+            print(f"[proxy] POST {l0veyou_path} -> {e.code}: {err_body[:200]}", file=sys.stderr, flush=True)
+            self._send_json({"error": {"message": "当前用户较多，请稍后再试", "type": "server_busy"}}, 200)
+        except Exception as e:
+            print(f"[proxy] POST {l0veyou_path} exception: {e}", file=sys.stderr, flush=True)
+            self._send_json({"error": {"message": "当前用户较多，请稍后再试", "type": "server_busy"}}, 200)
+
+    def _proxy_file(self, l0veyou_path):
+        """Proxy a file request to l0veyou (images, videos, etc.)."""
+        token = self._get_auth_token()
+        url = f"{L0VEYOU_BASE}{l0veyou_path}"
+        try:
+            req = urllib.request.Request(url, method="GET")
+            req.add_header("User-Agent", "CyberCode/1.0")
+            if token:
+                req.add_header("Authorization", f"Bearer {token}")
+            with urllib.request.urlopen(req, context=L0VEYOU_SSL_CTX, timeout=30) as resp:
+                body = resp.read()
+                self.send_response(resp.status)
+                self.send_header("Content-Type", resp.headers.get("Content-Type", "application/octet-stream"))
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "public, max-age=3600")
+                self.end_headers()
+                self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            self.send_response(e.code)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Not found")
+        except Exception as e:
+            self._send_json({"error": str(e)}, 502)
+
+    def _proxy_chat_completions(self):
+        """Proxy chat completions with SSE streaming support. Errors are sanitized."""
+        body_data = self._read_json()
+        token = self._get_auth_token()
+        if not token:
+            return self._send_json({"error": "missing token"}, 401)
+        url = f"{L0VEYOU_BASE}/v1/chat/completions"
+        try:
+            data = json.dumps(body_data).encode("utf-8")
+            req = urllib.request.Request(url, data=data, method="POST")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("User-Agent", "CyberCode/1.0")
+            req.add_header("Authorization", f"Bearer {token}")
+            with urllib.request.urlopen(req, context=L0VEYOU_SSL_CTX, timeout=120) as resp:
+                content_type = resp.headers.get("Content-Type", "application/json")
+                # Check if this is SSE stream
+                if "text/event-stream" in content_type or body_data.get("stream"):
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                    self.send_header("Cache-Control", "no-cache, no-transform")
+                    self.send_header("Connection", "keep-alive")
+                    self.send_header("X-Accel-Buffering", "no")
+                    self.end_headers()
+                    try:
+                        while True:
+                            chunk = resp.read(4096)
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                            self.wfile.flush()
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                else:
+                    body = resp.read()
+                    self.send_response(resp.status)
+                    self.send_header("Content-Type", content_type)
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+        except urllib.error.HTTPError as e:
+            err_body = e.read()
+            print(f"[proxy] chat/completions -> {e.code}: {err_body[:200]}", file=sys.stderr, flush=True)
+            # Return empty completion for chat errors
+            if body_data.get("stream"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache, no-transform")
+                self.send_header("Connection", "keep-alive")
+                self.send_header("X-Accel-Buffering", "no")
+                self.end_headers()
+                try:
+                    self.wfile.write(b"data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}
+
+")
+                    self.wfile.write(b"data: [DONE]
+
+")
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            else:
+                self._send_json({"choices": [{"index": 0, "message": {"role": "assistant", "content": ""}, "finish_reason": "stop"}]}, 200)
+        except Exception as e:
+            print(f"[proxy] chat/completions exception: {e}", file=sys.stderr, flush=True)
+            if body_data.get("stream"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache, no-transform")
+                self.send_header("Connection", "keep-alive")
+                self.send_header("X-Accel-Buffering", "no")
+                self.end_headers()
+                try:
+                    self.wfile.write(b"data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}
+
+")
+                    self.wfile.write(b"data: [DONE]
+
+")
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            else:
+                self._send_json({"choices": [{"index": 0, "message": {"role": "assistant", "content": ""}, "finish_reason": "stop"}]}, 200)
+
+    def _api_configure_llm(self):
+        """Auto-configure LLM with l0veyou backend using session token."""
+        data = self._read_json()
+        token = data.get("token", "")
+        if not token:
+            return self._send_json({"error": "missing token"})
+        model = data.get("model", "")
+        agent = get_agent()
+        cfg = {
+            "name": "CyberCode",
+            "model": model or "auto",
+            "apibase": L0VEYOU_BASE,
+            "apikey": token,
+            "remark": "l0veyou backend",
+        }
+        # Check if a l0veyou config already exists, update if so
+        found = False
+        target_idx = -1
+        for i, existing in enumerate(agent._llm_configs):
+            if existing.get("apibase", "").rstrip("/") == L0VEYOU_BASE:
+                agent.update_llm(i, cfg)
+                found = True
+                target_idx = i
+                break
+        if not found:
+            target_idx = agent.add_llm(cfg)
+        # Switch to the l0veyou LLM
+        agent.next_llm(target_idx)
+        llms = agent.list_llms()
+        self._send_json({
+            "ok": True,
+            "llm_no": agent.llm_no,
+            "llm_name": agent.get_llm_name(),
+            "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
+        })
 
     def _api_chat(self):
         data = self._read_json()

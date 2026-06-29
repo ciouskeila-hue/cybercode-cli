@@ -1,11 +1,9 @@
 {
   "name": "cybercode-cli",
-  "version": "1.0.4",
-  "description": "Codex-dark web UI with a built-in self-evolving agent + HyperFrames video skills",
-  "publishConfig": {
-    "access": "public"
-  },
+  "version": "1.1.0",
+  "description": "Codex-dark web UI with a built-in self-evolving agent. Supports LLM-powered coding, image/video generation, and more.",
   "type": "module",
+  "main": "bin/cli.mjs",
   "bin": {
     "cybercode": "bin/cli.mjs"
   },
@@ -13,33 +11,45 @@
     "bin/",
     "python/*.py",
     "python/*.html",
-    "skills/",
     "templates/",
-    "LICENSE",
-    "README.md"
+    "skills/",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node bin/cli.mjs",
+    "webui": "node bin/cli.mjs webui",
+    "update": "node bin/cli.mjs update",
+    "doctor": "node bin/cli.mjs doctor",
+    "prepublishOnly": "node -e \"console.log('Publishing cybercode-cli v' + require('./package.json').version)\""
   },
   "keywords": [
+    "cli",
     "agent",
-    "ai",
     "llm",
+    "ai",
     "codex",
     "web-ui",
-    "automation",
-    "self-evolving",
-    "hyperframes",
-    "video-generation"
+    "chatgpt",
+    "coding-assistant",
+    "self-evolving"
   ],
+  "author": "CyberCode",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/cybercode/cli.git"
   },
-  "homepage": "",
-  "scripts": {
-    "start": "node bin/cli.mjs",
-    "prepublishOnly": "node -e \"console.log('Publishing cybercode...')\""
-  }
+  "homepage": "https://l0veyou.com",
+  "bugs": {
+    "url": "https://github.com/cybercode/cli/issues"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ]
 }

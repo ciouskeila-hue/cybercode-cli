@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // cybercode CLI launcher — bootstraps a Python env and starts the web UI.
-// Designed for `npx cybercode` one-click usage.
+// Supports: npm install -g cybercode-cli && cybercode
 
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
@@ -16,12 +16,33 @@ const pkg = require("../package.json");
 const COLORS = {
   reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
   green: "\x1b[32m", yellow: "\x1b[33m", blue: "\x1b[34m",
-  red: "\x1b[31m", cyan: "\x1b[36m",
+  red: "\x1b[31m", cyan: "\x1b[36m", magenta: "\x1b[35m",
 };
 const c = (color, text) => `${COLORS[color] || ""}${text}${COLORS.reset}`;
 
+// ---- Update check ----
+async function checkForUpdates() {
+  try {
+    const registryUrl = `https://registry.npmjs.org/${pkg.name}/latest`;
+    const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return;
+    const data = await res.json();
+    const latest = data.version;
+    if (latest && latest !== pkg.version) {
+      const isGlobal = __dirname.includes("node_modules");
+      const updateCmd = isGlobal ? `npm update -g ${pkg.name}` : `npm install ${pkg.name}@latest`;
+      console.log(c("yellow", `\n  ┌─ Update available ─────────────────────────────┐`));
+      console.log(c("yellow", `  │  ${c("bold", pkg.name)} ${c("dim", pkg.version)} → ${c("green", latest)}${" ".repeat(Math.max(0, 26 - latest.length))}│`));
+      console.log(c("yellow", `  │  Run: ${c("cyan", updateCmd)}${" ".repeat(Math.max(0, 44 - updateCmd.length))}│`));
+      console.log(c("yellow", `  └────────────────────────────────────────────────┘\n`));
+    }
+  } catch {}
+}
+
 function splitCommand(argv) {
   if (argv[0] === "webui") return { command: "webui", args: argv.slice(1) };
+  if (argv[0] === "update") return { command: "update", args: argv.slice(1) };
+  if (argv[0] === "doctor") return { command: "doctor", args: argv.slice(1) };
   return { command: "webui", args: argv };
 }
 
@@ -47,13 +68,19 @@ function showHelp() {
   console.log(`
 ${c("bold", "cybercode")} ${c("dim", `v${pkg.version}`)} — Codex-dark web UI with a built-in self-evolving agent
 
+${c("bold", "INSTALL")}
+  ${c("green", "npm install -g cybercode-cli")}
+  ${c("dim", "# or: npm i -g cybercode-cli")}
+
 ${c("bold", "USAGE")}
-  npx cybercode webui                          # start the web UI
-  npx cybercode webui --port 8080              # custom port
-  npx cybercode webui --host 0.0.0.0           # listen on all interfaces
-  npx cybercode webui --no-browser             # don't auto-open browser
-  npx cybercode webui --dir ~/my-agent         # custom working directory
-  npx cybercode webui --llm 1                  # start on 2nd configured LLM
+  ${c("cyan", "cybercode")}                                # start the web UI
+  ${c("cyan", "cybercode")} webui --port 8080              # custom port
+  ${c("cyan", "cybercode")} webui --host 0.0.0.0           # listen on all interfaces
+  ${c("cyan", "cybercode")} webui --no-browser             # don't auto-open browser
+  ${c("cyan", "cybercode")} webui --dir ~/my-agent         # custom working directory
+  ${c("cyan", "cybercode")} webui --llm 1                  # start on 2nd configured LLM
+  ${c("cyan", "cybercode")} update                         # check & install latest version
+  ${c("cyan", "cybercode")} doctor                         # run diagnostics
 
 ${c("bold", "OPTIONS")}
   -p, --port <num>     Port (default: auto-find free port near 18600)
@@ -66,8 +93,12 @@ ${c("bold", "OPTIONS")}
 
 ${c("bold", "FIRST RUN")}
   On first launch, a ${c("cyan", "mykey.json")} template is created in the working
-  directory. Edit it with your LLM API keys (OpenAI, DeepSeek, etc.), then
-  restart. Any OpenAI-compatible endpoint works.
+  directory. Edit it with your LLM API keys, then restart.
+  Or just log in via the web UI (requires l0veyou backend).
+
+${c("bold", "UPDATE")}
+  ${c("cyan", "cybercode update")}                         # self-update to latest
+  ${c("dim", "# or: npm update -g cybercode-cli")}
 
 ${c("bold", "ATTRIBUTION")}
   Agent core inspired by GenericAgent (MIT). HyperFrames skills from HeyGen (MIT).
@@ -75,8 +106,105 @@ ${c("bold", "ATTRIBUTION")}
 `);
 }
 
+// ---- Self-update ----
+async function selfUpdate() {
+  console.log(c("blue", `\n  Checking for updates...\n`));
+  try {
+    const registryUrl = `https://registry.npmjs.org/${pkg.name}/latest`;
+    const res = await fetch(registryUrl, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error("registry unavailable");
+    const data = await res.json();
+    const latest = data.version;
+
+    if (latest === pkg.version) {
+      console.log(c("green", `  ✓ Already on latest version (${pkg.version})\n`));
+      process.exit(0);
+    }
+
+    console.log(c("yellow", `  Update available: ${pkg.version} → ${latest}\n`));
+    console.log(c("dim", `  Running: npm install -g ${pkg.name}@latest\n`));
+
+    const result = spawnSync("npm", ["install", "-g", `${pkg.name}@latest`], { stdio: "inherit", shell: true });
+    if (result.status === 0) {
+      console.log(c("green", `\n  ✓ Updated to ${latest}\n`));
+    } else {
+      console.error(c("red", `\n  ✗ Update failed. Try manually: npm install -g ${pkg.name}@latest\n`));
+    }
+    process.exit(result.status || 0);
+  } catch (e) {
+    console.error(c("red", `\n  ✗ Cannot check updates: ${e.message}\n`));
+    process.exit(1);
+  }
+}
+
+// ---- Doctor diagnostics ----
+async function runDoctor() {
+  console.log(c("bold", c("blue", `\n  cybercode doctor — diagnostics\n`)));
+  let allOk = true;
+
+  // Check Node
+  const nodeVer = process.versions.node;
+  const nodeMajor = parseInt(nodeVer.split(".")[0], 10);
+  if (nodeMajor >= 18) {
+    console.log(c("green", `  ✓ Node.js v${nodeVer}`));
+  } else {
+    console.log(c("red", `  ✗ Node.js v${nodeVer} (need >=18)`));
+    allOk = false;
+  }
+
+  // Check Python
+  const python = findPython(true);
+  if (python) {
+    console.log(c("green", `  ✓ Python: ${python}`));
+  } else {
+    console.log(c("red", `  ✗ Python 3.11+ not found`));
+    allOk = false;
+  }
+
+  // Check requests
+  if (python) {
+    try {
+      const result = spawnSync(python, ["-c", "import requests; print(requests.__version__)"], { encoding: "utf-8", timeout: 5000 });
+      if (result.status === 0) {
+        console.log(c("green", `  ✓ requests ${result.stdout.trim()}`));
+      } else {
+        console.log(c("yellow", `  ⚠ requests not installed (will auto-install on first run)`));
+      }
+    } catch {
+      console.log(c("yellow", `  ⚠ requests check failed`));
+    }
+  }
+
+  // Check working dir
+  const workDir = join(homedir(), ".cybercode");
+  if (existsSync(workDir)) {
+    console.log(c("green", `  ✓ Working dir: ${workDir}`));
+  } else {
+    console.log(c("dim", `  ○ Working dir not created yet (will create on first run): ${workDir}`));
+  }
+
+  // Check for updates
+  try {
+    const registryUrl = `https://registry.npmjs.org/${pkg.name}/latest`;
+    const res = await fetch(registryUrl, { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const latest = data.version;
+    if (latest === pkg.version) {
+      console.log(c("green", `  ✓ cybercode-cli v${pkg.version} (latest)`));
+    } else {
+      console.log(c("yellow", `  ⚠ Update available: ${pkg.version} → ${latest}`));
+      console.log(c("dim", `    Run: cybercode update`));
+    }
+  } catch {
+    console.log(c("dim", `  ○ Cannot check npm registry`));
+  }
+
+  console.log(allOk ? c("green", c("bold", `\n  All checks passed.\n`)) : c("yellow", c("bold", `\n  Some checks need attention.\n`)));
+  process.exit(0);
+}
+
 // ---- Find Python 3.11+ ----
-function findPython() {
+function findPython(quiet) {
   const candidates = process.env.CYBERCODE_PYTHON
     ? [process.env.CYBERCODE_PYTHON]
     : ["python3", "python3.12", "python3.11", "python"];
@@ -94,10 +222,13 @@ function findPython() {
     } catch {}
   }
 
-  console.error(c("red", "✗ Python 3.11+ not found."));
-  console.error(c("dim", "  Install Python 3.11 or 3.12, or set CYBERCODE_PYTHON env var."));
-  console.error(c("dim", "  Download: https://www.python.org/downloads/"));
-  process.exit(1);
+  if (!quiet) {
+    console.error(c("red", "✗ Python 3.11+ not found."));
+    console.error(c("dim", "  Install Python 3.11 or 3.12, or set CYBERCODE_PYTHON env var."));
+    console.error(c("dim", "  Download: https://www.python.org/downloads/"));
+    process.exit(1);
+  }
+  return null;
 }
 
 // ---- Find a free port ----
@@ -174,6 +305,9 @@ async function launchWebUI(rawArgv) {
   if (args.help) { showHelp(); process.exit(0); }
   if (args.version) { console.log(pkg.version); process.exit(0); }
 
+  // Fire update check in background (non-blocking)
+  checkForUpdates();
+
   const python = findPython();
   const workDir = resolve(args.dir || join(homedir(), ".cybercode"));
   if (!existsSync(workDir)) mkdirSync(workDir, { recursive: true });
@@ -222,8 +356,7 @@ async function launchWebUI(rawArgv) {
   if (!configured) {
     console.log(c("yellow", `  ⚠ mykey.json not configured yet.`));
     console.log(c("dim", `    Edit: ${mykeyPath}`));
-    console.log(c("dim", `    Add your OpenAI-compatible API key, then restart.`));
-    console.log(c("dim", `    The UI will still load and show a setup banner.`));
+    console.log(c("dim", `    Or log in via the web UI (requires l0veyou backend).`));
     console.log();
   }
 
@@ -247,6 +380,10 @@ const argv = process.argv.slice(2);
 const { command, args } = splitCommand(argv);
 if (command === "webui") {
   launchWebUI(args).catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
+} else if (command === "update") {
+  selfUpdate().catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
+} else if (command === "doctor") {
+  runDoctor().catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
 } else {
   showHelp();
 }

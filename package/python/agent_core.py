@@ -617,6 +617,7 @@ class LLMClient:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "Accept": "text/event-stream" if self.stream else "application/json",
+            "User-Agent": "CyberCode/1.0",
         }
         payload = {"model": self.model, "messages": oai_messages, "stream": self.stream}
         if self.temperature != 1:

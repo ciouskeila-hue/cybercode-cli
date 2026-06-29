@@ -223,9 +223,138 @@
       .llm-modal .btn-cancel:hover { background: rgba(255,255,255,.1); }
       .llm-modal .btn-delete { background: rgba(239,68,68,.15); color: #ff8888; border: 1px solid rgba(239,68,68,.3); border-radius: 8px; padding: 9px 16px; font-size: 13.5px; cursor: pointer; margin-right: auto; }
       .llm-modal .btn-delete:hover { background: rgba(239,68,68,.25); }
+
+      /* ---- login overlay ---- */
+      #login-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #1a1a1c;
+        display: flex; align-items: center; justify-content: center;
+        transition: opacity .3s;
+      }
+      #login-overlay.hide { opacity: 0; pointer-events: none; }
+      .login-box {
+        width: 380px; max-width: 90vw;
+        background: #1f1f22; border: 1px solid rgba(255,255,255,.06);
+        border-radius: 16px; padding: 36px 32px;
+        box-shadow: 0 8px 40px rgba(0,0,0,.4);
+      }
+      .login-logo {
+        width: 48px; height: 48px; margin: 0 auto 16px;
+        background: #6b8cff; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; font-weight: 700; color: #fff;
+      }
+      .login-title { text-align: center; font-size: 22px; font-weight: 600; color: rgba(255,255,255,.94); margin-bottom: 6px; }
+      .login-subtitle { text-align: center; font-size: 13px; color: rgba(255,255,255,.4); margin-bottom: 28px; }
+      .login-field { margin-bottom: 14px; }
+      .login-field label { display: block; font-size: 12px; color: rgba(255,255,255,.5); margin-bottom: 6px; }
+      .login-field input {
+        width: 100%; padding: 11px 14px; font-size: 14px;
+        background: #15151a; border: 1px solid rgba(255,255,255,.08);
+        border-radius: 10px; color: rgba(255,255,255,.9); outline: none;
+        transition: border .15s;
+      }
+      .login-field input:focus { border-color: #6b8cff; }
+      .login-btn {
+        width: 100%; padding: 12px; font-size: 14px; font-weight: 500;
+        background: #6b8cff; color: #fff; border: none; border-radius: 10px;
+        cursor: pointer; transition: background .15s; margin-top: 6px;
+      }
+      .login-btn:hover { background: #7d96ff; }
+      .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+      .login-divider {
+        display: flex; align-items: center; gap: 12px; margin: 22px 0;
+        color: rgba(255,255,255,.3); font-size: 12px;
+      }
+      .login-divider::before, .login-divider::after {
+        content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.08);
+      }
+      .oauth-btn {
+        width: 100%; padding: 11px; font-size: 13.5px; font-weight: 500;
+        background: rgba(255,255,255,.06); color: rgba(255,255,255,.85);
+        border: 1px solid rgba(255,255,255,.1); border-radius: 10px;
+        cursor: pointer; transition: background .15s; margin-bottom: 8px;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+      }
+      .oauth-btn:hover { background: rgba(255,255,255,.1); }
+      .login-switch { text-align: center; font-size: 13px; color: rgba(255,255,255,.4); margin-top: 18px; }
+      .login-switch a { color: #6b8cff; cursor: pointer; text-decoration: none; }
+      .login-switch a:hover { text-decoration: underline; }
+      .login-error { color: #ff6b6b; font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; }
+    
+/* Image/Video generation panel */
+.gen-panel{position:fixed;top:0;right:0;width:420px;height:100vh;background:#1a1a1e;border-left:1px solid rgba(255,255,255,.08);z-index:200;transform:translateX(100%);transition:transform .3s ease;display:flex;flex-direction:column}
+.gen-panel.open{transform:translateX(0)}
+.gen-panel .gp-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+.gen-panel .gp-title{font-size:15px;font-weight:600;color:#fff}
+.gen-panel .gp-close{background:none;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;padding:0 4px}
+.gen-panel .gp-close:hover{color:#fff}
+.gen-panel .gp-body{flex:1;overflow-y:auto;padding:16px 18px}
+.gen-panel .gp-field{margin-bottom:14px}
+.gen-panel .gp-field label{display:block;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:5px}
+.gen-panel .gp-field input,.gen-panel .gp-field select,.gen-panel .gp-field textarea{width:100%;background:#0d0d0f;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;color:#fff;font-size:13px;box-sizing:border-box}
+.gen-panel .gp-field textarea{resize:vertical;min-height:80px}
+.gen-panel .gp-field select{cursor:pointer}
+.gen-panel .gp-row{display:flex;gap:10px}
+.gen-panel .gp-row .gp-field{flex:1}
+.gen-panel .gp-btn{width:100%;padding:10px;border:none;border-radius:8px;background:#2997ff;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+.gen-panel .gp-btn:hover{background:#0a84ff}
+.gen-panel .gp-btn:disabled{opacity:.5;cursor:not-allowed}
+.gen-panel .gp-status{font-size:12px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center}
+.gen-panel .gp-results{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.gen-panel .gp-results img{width:100%;border-radius:8px;cursor:pointer}
+.gen-panel .gp-results video{width:100%;border-radius:8px}
+.gen-panel .gp-task{background:#0d0d0f;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;color:rgba(255,255,255,.6)}
+.gen-panel .gp-task .gp-task-status{font-weight:600}
+.gen-panel .gp-task .gp-task-prompt{color:rgba(255,255,255,.4);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     </style>
   </head>
   <body>
+    <!-- Login overlay -->
+    <div id="login-overlay">
+      <div class="login-box">
+        <div class="login-logo">C</div>
+        <div class="login-title">CyberCode</div>
+        <div class="login-subtitle" id="login-subtitle">Sign in to your account</div>
+        <div class="login-error" id="login-error"></div>
+        <div id="login-form-wrap">
+          <div class="login-field">
+            <label>Username</label>
+            <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" />
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+          </div>
+          <button class="login-btn" id="login-submit">Sign In</button>
+        </div>
+        <div id="register-form-wrap" style="display:none;">
+          <div class="login-field">
+            <label>Username</label>
+            <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="username" />
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <input type="password" id="reg-password" placeholder="Choose a password" autocomplete="new-password" />
+          </div>
+          <div class="login-field">
+            <label>Display Name</label>
+            <input type="text" id="reg-name" placeholder="Your display name" />
+          </div>
+          <div class="login-field">
+            <label>Invite Code (optional)</label>
+            <input type="text" id="reg-invite" placeholder="Invite code if required" />
+          </div>
+          <button class="login-btn" id="register-submit">Create Account</button>
+        </div>
+        <div class="login-divider" id="oauth-divider" style="display:none;">or continue with</div>
+        <div id="oauth-buttons"></div>
+        <div class="login-switch" id="login-switch">
+          <span id="switch-text">Don't have an account?</span>
+          <a id="switch-link">Sign up</a>
+        </div>
+      </div>
+    </div>
     <main class="desktop">
       <section class="window">
         <aside class="sidebar">
@@ -247,6 +376,14 @@
             <div class="nav-item" id="nav-video" title="Make a video with HyperFrames">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
               <span>Make video</span>
+            </div>
+            <div class="nav-item" id="nav-image-gen" title="Image generation">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+              <span>Image Gen</span>
+            </div>
+            <div class="nav-item" id="nav-video-gen" title="Video generation">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+              <span>Video Gen</span>
             </div>
             <div class="nav-item" id="nav-models" title="Model management (add / edit / delete)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
@@ -348,6 +485,103 @@
         </section>
       </section>
     </main>
+    <!-- Image generation panel -->
+    <div class="gen-panel" id="image-panel">
+      <div class="gp-header">
+        <div class="gp-title">Image Generation</div>
+        <button class="gp-close" onclick="closeGenPanel('image-panel')">&times;</button>
+      </div>
+      <div class="gp-body">
+        <div class="gp-field">
+          <label>Prompt</label>
+          <textarea id="img-prompt" placeholder="Describe the image you want to generate..."></textarea>
+        </div>
+        <div class="gp-row">
+          <div class="gp-field">
+            <label>Model</label>
+            <select id="img-model"></select>
+          </div>
+          <div class="gp-field">
+            <label>Size</label>
+            <select id="img-size">
+              <option value="auto">auto</option>
+              <option value="1024x1024">1024x1024</option>
+              <option value="1024x1536">1024x1536</option>
+              <option value="1536x1024">1536x1024</option>
+            </select>
+          </div>
+        </div>
+        <div class="gp-row">
+          <div class="gp-field">
+            <label>Quality</label>
+            <select id="img-quality">
+              <option value="auto">auto</option>
+              <option value="high">high</option>
+              <option value="medium">medium</option>
+              <option value="low">low</option>
+            </select>
+          </div>
+          <div class="gp-field">
+            <label>Count</label>
+            <select id="img-count">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+        </div>
+        <button class="gp-btn" id="img-generate" onclick="generateImage()">Generate</button>
+        <div class="gp-status" id="img-status"></div>
+        <div class="gp-results" id="img-results"></div>
+      </div>
+    </div>
+    <!-- Video generation panel -->
+    <div class="gen-panel" id="video-panel">
+      <div class="gp-header">
+        <div class="gp-title">Video Generation</div>
+        <button class="gp-close" onclick="closeGenPanel('video-panel')">&times;</button>
+      </div>
+      <div class="gp-body">
+        <div class="gp-field">
+          <label>Prompt</label>
+          <textarea id="vid-prompt" placeholder="Describe the video you want to generate..."></textarea>
+        </div>
+        <div class="gp-row">
+          <div class="gp-field">
+            <label>Model</label>
+            <select id="vid-model"></select>
+          </div>
+          <div class="gp-field">
+            <label>Duration (sec)</label>
+            <select id="vid-duration">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+            </select>
+          </div>
+        </div>
+        <div class="gp-row">
+          <div class="gp-field">
+            <label>Ratio</label>
+            <select id="vid-ratio">
+              <option value="16:9">16:9</option>
+              <option value="9:16">9:16</option>
+              <option value="1:1">1:1</option>
+            </select>
+          </div>
+          <div class="gp-field">
+            <label>Resolution</label>
+            <select id="vid-resolution">
+              <option value="720p">720p</option>
+              <option value="1080p">1080p</option>
+            </select>
+          </div>
+        </div>
+        <button class="gp-btn" id="vid-generate" onclick="generateVideo()">Generate</button>
+        <div class="gp-status" id="vid-status"></div>
+        <div class="gp-results" id="vid-results"></div>
+      </div>
+    </div>
     <!-- 独立的浮动模型菜单（原嵌套在 #llm-pill 内，现移出避免被 #empty 隐藏） -->
     <div class="pill-menu" id="llm-menu"></div>
     <div class="video-modal" id="video-modal">
@@ -463,7 +697,244 @@
     <script>
     "use strict";
     const $ = (id) => document.getElementById(id);
-    const state = { running: false, configured: true, llms: [], llmNo: 0, llmName: "—", sessionPath: null };
+    const state = { running: false, configured: true, llms: [], llmNo: 0, llmName: "—", sessionPath: null, l0veyouModels: [] };
+
+    // ---------- l0veyou auth integration ----------
+    const L0VEYOU_BASE = "https://l0veyou.com";
+    const CyberCodeAuth = {
+      KEY: "cybercode_auth_session",
+      getToken() {
+        try { const s = JSON.parse(localStorage.getItem(this.KEY) || "{}"); return s.token || ""; }
+        catch { return ""; }
+      },
+      getSession() {
+        try { return JSON.parse(localStorage.getItem(this.KEY) || "{}"); }
+        catch { return {}; }
+      },
+      setSession(data) {
+        localStorage.setItem(this.KEY, JSON.stringify({
+          token: data.token || "",
+          name: data.name || "",
+          role: data.role || "",
+          provider: data.provider || "",
+        }));
+      },
+      clear() { localStorage.removeItem(this.KEY); },
+      isLoggedIn() { return !!this.getToken(); },
+      async login(username, password) {
+        const resp = await fetch("/proxy/auth/login", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({username, password}),
+        });
+        const data = await resp.json();
+        if (data.ok && data.token) {
+          this.setSession(data);
+          return data;
+        }
+        throw new Error(data.error || "Login failed");
+      },
+      async register(username, password, name, inviteCode) {
+        const body = {username, password, name};
+        if (inviteCode) body.invite_code = inviteCode;
+        const resp = await fetch("/proxy/auth/register", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (data.ok && data.token) {
+          this.setSession(data);
+          return data;
+        }
+        throw new Error(data.error || "Registration failed");
+      },
+      async verify() {
+        const token = this.getToken();
+        if (!token) return null;
+        try {
+          const resp = await fetch("/proxy/auth/session", {
+            headers: {"Authorization": "Bearer " + token},
+          });
+          if (!resp.ok) { this.clear(); return null; }
+          const data = await resp.json();
+          if (data.ok) return data;
+          this.clear(); return null;
+        } catch { return null; }
+      },
+      async logout() {
+        const token = this.getToken();
+        if (token) {
+          try { await fetch("/proxy/auth/logout", { method: "POST", headers: {"Authorization": "Bearer " + token} }); } catch {}
+        }
+        this.clear();
+      },
+      async loadProviders() {
+        try {
+          const resp = await fetch("/proxy/auth/providers");
+          return await resp.json();
+        } catch { return {}; }
+      },
+      async loadModels() {
+        const token = this.getToken();
+        if (!token) return [];
+        try {
+          const resp = await fetch("/proxy/v1/models", {
+            headers: {"Authorization": "Bearer " + token},
+          });
+          const data = await resp.json();
+          return data.data || [];
+        } catch { return []; }
+      },
+      async configureLLM(model) {
+        const token = this.getToken();
+        if (!token) return;
+        try {
+          await fetch("/api/auth/configure-llm", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({token, model: model || ""}),
+          });
+        } catch {}
+      },
+    };
+
+    // ---------- login UI ----------
+    let isRegisterMode = false;
+    let authProviders = {};
+
+    function showLogin() { $("login-overlay").classList.remove("hide"); $("login-overlay").style.display = "flex"; }
+    function hideLogin() { $("login-overlay").classList.add("hide"); setTimeout(() => { $("login-overlay").style.display = "none"; }, 300); }
+
+    function setLoginError(msg) { $("login-error").textContent = msg || ""; }
+
+    function switchMode() {
+      isRegisterMode = !isRegisterMode;
+      $("login-form-wrap").style.display = isRegisterMode ? "none" : "";
+      $("register-form-wrap").style.display = isRegisterMode ? "" : "none";
+      $("switch-text").textContent = isRegisterMode ? "Already have an account?" : "Don't have an account?";
+      $("switch-link").textContent = isRegisterMode ? "Sign in" : "Sign up";
+      $("login-subtitle").textContent = isRegisterMode ? "Create a new account" : "Sign in to your account";
+      setLoginError("");
+    }
+
+    async function initLoginUI() {
+      // Load auth providers
+      authProviders = await CyberCodeAuth.loadProviders();
+      const oauthBtns = $("oauth-buttons");
+      const oauthDivider = $("oauth-divider");
+      let hasOAuth = false;
+
+      if (authProviders.github && authProviders.github.enabled) {
+        const btn = document.createElement("button");
+        btn.className = "oauth-btn";
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> GitHub Login';
+        btn.onclick = () => { window.location.href = L0VEYOU_BASE + "/auth/github/start?redirect=/cybercode-return"; };
+        oauthBtns.appendChild(btn);
+        hasOAuth = true;
+      }
+      if (authProviders.linuxdo && authProviders.linuxdo.enabled) {
+        const btn = document.createElement("button");
+        btn.className = "oauth-btn";
+        btn.textContent = "LinuxDo Login";
+        btn.onclick = () => { window.location.href = L0VEYOU_BASE + "/auth/linuxdo/start?redirect=/cybercode-return"; };
+        oauthBtns.appendChild(btn);
+        hasOAuth = true;
+      }
+      if (hasOAuth) { oauthDivider.style.display = ""; }
+
+      // Show/hide registration based on providers
+      const regEnabled = authProviders.registration && authProviders.registration.enabled;
+      $("login-switch").style.display = regEnabled ? "" : "none";
+
+      // Login submit
+      $("login-submit").onclick = async () => {
+        const u = $("login-username").value.trim();
+        const p = $("login-password").value;
+        if (!u || !p) { setLoginError("Please enter username and password"); return; }
+        $("login-submit").disabled = true; setLoginError("");
+        try {
+          const data = await CyberCodeAuth.login(u, p);
+          await onAuthSuccess(data);
+        } catch(e) { setLoginError(e.message); }
+        finally { $("login-submit").disabled = false; }
+      };
+
+      // Register submit
+      $("register-submit").onclick = async () => {
+        const u = $("reg-username").value.trim();
+        const p = $("reg-password").value;
+        const n = $("reg-name").value.trim();
+        const ic = $("reg-invite").value.trim();
+        if (!u || !p) { setLoginError("Username and password are required"); return; }
+        $("register-submit").disabled = true; setLoginError("");
+        try {
+          const data = await CyberCodeAuth.register(u, p, n || u, ic);
+          await onAuthSuccess(data);
+        } catch(e) { setLoginError(e.message); }
+        finally { $("register-submit").disabled = false; }
+      };
+
+      // Switch mode
+      $("switch-link").onclick = switchMode;
+
+      // Enter key
+      $("login-password").addEventListener("keydown", e => { if (e.key === "Enter") $("login-submit").click(); });
+      $("reg-invite").addEventListener("keydown", e => { if (e.key === "Enter") $("register-submit").click(); });
+    }
+
+    async function onAuthSuccess(data) {
+      hideLogin();
+      // Auto-configure LLM with l0veyou backend
+      await CyberCodeAuth.configureLLM("");
+      // Reload status to get updated LLM list
+      await loadStatus();
+      // Load l0veyou models into the model menu
+      await loadL0veyouModels();
+      toast("Welcome, " + (data.name || "user") + "!");
+    }
+
+    // OAuth callback handler - check URL fragment for token
+    async function handleOAuthCallback() {
+      const hash = window.location.hash.replace(/^#/, "");
+      if (!hash) return false;
+      const params = new URLSearchParams(hash);
+      const key = params.get("key");
+      if (key) {
+        // Verify the session
+        try {
+          const resp = await fetch("/proxy/auth/session", {
+            headers: {"Authorization": "Bearer " + key},
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            CyberCodeAuth.setSession({ ...data, token: key });
+            // Clear the hash
+            history.replaceState(null, "", window.location.pathname);
+            await onAuthSuccess(data);
+            return true;
+          }
+        } catch {}
+        // If verification fails, still try to use the key
+        CyberCodeAuth.setSession({ token: key });
+        history.replaceState(null, "", window.location.pathname);
+        hideLogin();
+        await CyberCodeAuth.configureLLM("");
+        await loadStatus();
+        await loadL0veyouModels();
+        return true;
+      }
+      return false;
+    }
+
+    // Load l0veyou models into state for menu rendering
+    async function loadL0veyouModels() {
+      const models = await CyberCodeAuth.loadModels();
+      state.l0veyouModels = models || [];
+      renderLlmMenu();
+    }
+
+
 
     // ---------- tiny utils ----------
     function toast(msg) {
@@ -627,6 +1098,149 @@
       renderLlmMenu();
     }
 
+// ===== Image/Video Generation =====
+function openGenPanel(id) {
+  document.getElementById(id).classList.add("open");
+  loadGenModels();
+}
+function closeGenPanel(id) {
+  document.getElementById(id).classList.remove("open");
+}
+function loadGenModels() {
+  const token = CyberCodeAuth.getToken();
+  if (!token) return;
+  fetch("/proxy/v1/models", { headers: { Authorization: "Bearer " + token } })
+    .then(r => r.json())
+    .then(data => {
+      const models = data.data || [];
+      const imgModels = models.filter(m => m.id && (m.id.includes("image") || m.id.includes("dall") || m.id.includes("gpt-image")));
+      const vidModels = models.filter(m => m.id && (m.id.includes("video") || m.id.includes("sora") || m.id.includes("ltx")));
+      const imgSel = document.getElementById("img-model");
+      const vidSel = document.getElementById("vid-model");
+      imgSel.innerHTML = imgModels.length ? imgModels.map(m => '<option value="' + esc(m.id) + '">' + esc(m.id) + "</option>").join("") : models.map(m => '<option value="' + esc(m.id) + '">' + esc(m.id) + "</option>").join("");
+      vidSel.innerHTML = vidModels.length ? vidModels.map(m => '<option value="' + esc(m.id) + '">' + esc(m.id) + "</option>").join("") : models.map(m => '<option value="' + esc(m.id) + '">' + esc(m.id) + "</option>").join("");
+    })
+    .catch(e => console.error("loadGenModels:", e));
+}
+function generateImage() {
+  const token = CyberCodeAuth.getToken();
+  if (!token) { alert("Please login first"); return; }
+  const prompt = document.getElementById("img-prompt").value.trim();
+  if (!prompt) { alert("Please enter a prompt"); return; }
+  const model = document.getElementById("img-model").value || "dall-e-3";
+  const size = document.getElementById("img-size").value;
+  const quality = document.getElementById("img-quality").value;
+  const n = parseInt(document.getElementById("img-count").value);
+  const statusEl = document.getElementById("img-status");
+  const resultsEl = document.getElementById("img-results");
+  const btn = document.getElementById("img-generate");
+  btn.disabled = true;
+  statusEl.textContent = "Generating...";
+  resultsEl.innerHTML = "";
+  fetch("/proxy/api/creation-tasks/image-generations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ model: model, prompt: prompt, size: size, quality: quality, n: n, client_task_id: "img_" + Date.now() + "_" + Math.random().toString(36).substr(2, 8) })
+  })
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      if (data.error) { statusEl.textContent = "Error: " + (data.error.message || data.error); return; }
+      statusEl.textContent = "Done!";
+      const images = data.data || [];
+      resultsEl.innerHTML = images.map(img => {
+        if (img.url) return '<img src="' + esc(img.url.replace(/^https?:\/\/[^/]+/, "")) + '" onclick="window.open(this.src)" />';
+        if (img.b64_json) return '<img src="data:image/png;base64,' + img.b64_json + '" onclick="window.open(this.src)" />';
+        return "";
+      }).join("");
+    })
+    .catch(e => { btn.disabled = false; statusEl.textContent = "Error: " + e.message; });
+}
+function generateVideo() {
+  const token = CyberCodeAuth.getToken();
+  if (!token) { alert("Please login first"); return; }
+  const prompt = document.getElementById("vid-prompt").value.trim();
+  if (!prompt) { alert("Please enter a prompt"); return; }
+  const model = document.getElementById("vid-model").value || "auto";
+  const duration = parseInt(document.getElementById("vid-duration").value);
+  const ratio = document.getElementById("vid-ratio").value;
+  const resolution = document.getElementById("vid-resolution").value;
+  const statusEl = document.getElementById("vid-status");
+  const resultsEl = document.getElementById("vid-results");
+  const btn = document.getElementById("vid-generate");
+  btn.disabled = true;
+  statusEl.textContent = "Submitting video generation task...";
+  resultsEl.innerHTML = "";
+  fetch("/proxy/api/creation-tasks/chat-completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ model: model, prompt: prompt, messages: [{ role: "user", content: prompt }], stream: false, duration: duration, ratio: ratio, resolution: resolution, client_task_id: "vid_" + Date.now() + "_" + Math.random().toString(36).substr(2, 8) })
+  })
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      if (data.error) { statusEl.textContent = "Error: " + (data.error.message || data.error); return; }
+      const taskId = data.id || data.task_id || (data.data && data.data.id) || data.client_task_id;
+      if (taskId) {
+        statusEl.textContent = "Task submitted! ID: " + taskId + ". Polling for results...";
+        pollVideoTask(taskId, statusEl, resultsEl);
+      } else if (data.choices && data.choices[0]) {
+        statusEl.textContent = "Done!";
+        const content = data.choices[0].message?.content || "";
+        const videoMatch = content.match(/https?:\/\/[^\s"]+\.mp4/) || content.match(/https?:\/\/[^\s"]+ltx_video[^\s"]*/);
+        if (videoMatch) {
+          resultsEl.innerHTML = '<video controls autoplay src="' + esc(videoMatch[0]) + '"></video>';
+        } else {
+          resultsEl.innerHTML = '<div style="color:rgba(255,255,255,.6);font-size:12px">' + esc(content.substring(0, 500)) + "</div>";
+        }
+      } else {
+        statusEl.textContent = "Done! " + JSON.stringify(data).substring(0, 200);
+      }
+    })
+    .catch(e => { btn.disabled = false; statusEl.textContent = "Error: " + e.message; });
+}
+function pollVideoTask(taskId, statusEl, resultsEl) {
+  const token = CyberCodeAuth.getToken();
+  let attempts = 0;
+  const maxAttempts = 120;
+  const interval = setInterval(() => {
+    attempts++;
+    if (attempts > maxAttempts) { clearInterval(interval); statusEl.textContent = "Timeout waiting for result"; return; }
+    fetch("/proxy/api/creation-tasks/" + taskId, { headers: { Authorization: "Bearer " + token } })
+      .then(r => r.json())
+      .then(data => {
+        const task = data.data || data;
+        const status = task.status || task.state || (task.completed_at ? "completed" : "pending");
+        statusEl.textContent = "Status: " + status + " (" + attempts + "/" + maxAttempts + ")";
+        if (status === "completed" || status === "succeeded" || status === "done") {
+          clearInterval(interval);
+          statusEl.textContent = "Done!";
+          const result = task.result || task.output || task.data || task;
+          let videoUrl = result.video_url || result.url;
+          if (!videoUrl && result.choices && result.choices[0]) {
+            const content = result.choices[0].message?.content || result.choices[0].delta?.content || "";
+            const m = content.match(/https?:\/\/[^\s"]+\.mp4/) || content.match(/https?:\/\/[^\s"]+ltx_video[^\s"]*/);
+            if (m) videoUrl = m[0];
+          }
+          if (!videoUrl && task.image_urls && task.image_urls.length) {
+            videoUrl = task.image_urls[0];
+          }
+          if (videoUrl) {
+            const proxyUrl = videoUrl.replace(/^https?:\/\/[^/]+/, "");
+            resultsEl.innerHTML = '<video controls autoplay src="' + esc(proxyUrl) + '"></video>';
+          } else {
+            resultsEl.innerHTML = '<div style="color:rgba(255,255,255,.6);font-size:12px">' + esc(JSON.stringify(result).substring(0, 500)) + "</div>";
+          }
+        } else if (status === "failed" || status === "error") {
+          clearInterval(interval);
+          statusEl.textContent = "Failed: " + (task.error || task.message || "unknown error");
+        }
+      })
+      .catch(e => { console.error("poll error:", e); });
+  }, 3000);
+}
+
+    function closeLlmMenu() { $("llm-menu").classList.remove("open"); }
     function toggleLlmMenuNear(anchor) {
       const menu = $("llm-menu");
       if (menu.classList.contains("open")) { menu.classList.remove("open"); return; }
@@ -650,6 +1264,26 @@
         };
         menu.appendChild(it);
       });
+      // l0veyou models section
+      if (state.l0veyouModels && state.l0veyouModels.length) {
+        const lsep = document.createElement("div");
+        lsep.className = "hint";
+        lsep.textContent = "Models";
+        menu.appendChild(lsep);
+        state.l0veyouModels.forEach(m => {
+          const lit = document.createElement("div");
+          lit.className = "item";
+          lit.innerHTML = '<span class="dot" style="width:7px;height:7px;border-radius:50%;background:#2997ff;flex:0 0 auto"></span><span>' + esc(m.id) + '</span>';
+          lit.onclick = () => {
+            CyberCodeAuth.configureLLM(m.id).then(() => {
+              loadStatus();
+              closeLlmMenu();
+              toast("Model: " + m.id);
+            });
+          };
+          menu.appendChild(lit);
+        });
+      }
       // divider + add button
       const divider = document.createElement("div");
       divider.className = "llm-divider";
@@ -978,8 +1612,30 @@
       if (fr) { navigator.clipboard && navigator.clipboard.writeText(fr.dataset.path); toast("copied path: " + fr.dataset.path); }
     });
 
+document.getElementById("nav-image-gen").addEventListener("click", () => openGenPanel("image-panel"));
+document.getElementById("nav-video-gen").addEventListener("click", () => openGenPanel("video-panel"));
+
     // boot
     (async () => {
+      // Check for OAuth callback first
+      const oauthHandled = await handleOAuthCallback();
+
+      // Initialize login UI
+      await initLoginUI();
+
+      // Check auth status
+      if (!oauthHandled) {
+        const session = await CyberCodeAuth.verify();
+        if (session) {
+          hideLogin();
+          await CyberCodeAuth.configureLLM("");
+          await loadL0veyouModels();
+        } else {
+          showLogin();
+        }
+      }
+
+      // Load app data
       await loadStatus(); loadSessions(); loadSkills(); loadVideos();
       setInterval(loadStatus, 4000); setInterval(loadSessions, 15000); setInterval(loadVideos, 20000);
     })();

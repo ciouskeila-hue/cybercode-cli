@@ -1,24 +1,82 @@
-# cybercodewebui — Codex-dark Web UI with a Built-in Self-Evolving Agent
+# CyberCode CLI — Codex-dark Web UI with a Built-in Self-Evolving Agent
+
+[![npm version](https://img.shields.io/npm/v/cybercode-cli.svg)](https://www.npmjs.com/package/cybercode-cli)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![deps](https://img.shields.io/badge/dependencies-stdlib%2Brequests-28c840)](#)
 
 A standalone, self-contained web UI + agent framework styled after the
 Codex-dark interface. **No external agent dependency** — the entire agent
 core (LLM client, agent loop, 9 atomic tools, layered memory) ships inside
 `agent_core.py` and runs from a single directory.
 
-![cybercode](https://img.shields.io/badge/npm-cybercode-6b8cff) ![deps](https://img.shields.io/badge/dependencies-stdlib+requests-28c840) ![py](https://img.shields.io/badge/python-3.11%2B-blue) ![license](https://img.shields.io/badge/license-MIT-blue)
-
-## Quick Start
+## Install
 
 ```bash
-npx cybercode
+npm install -g cybercode-cli
 ```
 
-That's it. On first run it:
-1. Finds Python 3.11+ on your system
-2. Installs `requests` if missing
-3. Copies the bundled agent + skills to `~/.cybercode/`
-4. Creates a `mykey.json` template (edit it with your API key)
-5. Starts the web UI and opens your browser
+Then run:
+
+```bash
+cybercode
+```
+
+That's it. On first run it will:
+1. Find Python 3.11+ on your system
+2. Install `requests` if missing
+3. Copy the bundled agent + skills to `~/.cybercode/`
+4. Create a `mykey.json` template (edit it with your API key, or log in via the web UI)
+5. Start the web UI and open your browser
+
+## Update
+
+CyberCode automatically checks for updates on startup. To manually update:
+
+```bash
+cybercode update
+```
+
+Or via npm:
+
+```bash
+npm update -g cybercode-cli
+```
+
+## Diagnostics
+
+Run `cybercode doctor` to check your environment:
+
+```bash
+cybercode doctor
+```
+
+Checks Node.js, Python, `requests` package, working directory, and npm registry version.
+
+## Usage
+
+```bash
+cybercode                                # start the web UI (default)
+cybercode webui --port 8080              # custom port
+cybercode webui --host 0.0.0.0           # listen on all interfaces
+cybercode webui --no-browser             # don't auto-open browser
+cybercode webui --dir ~/my-agent         # custom working directory
+cybercode webui --llm 1                  # start on 2nd configured LLM
+cybercode update                         # self-update to latest version
+cybercode doctor                         # run diagnostics
+```
+
+### Options
+
+| Flag | Description |
+| :--- | :--- |
+| `-p, --port <num>` | Port (default: auto-find free port near 18600) |
+| `--host <addr>` | Bind address (default: 127.0.0.1) |
+| `--dir <path>` | Working directory (default: ~/.cybercode) |
+| `--llm <num>` | LLM index to start with (default: 0) |
+| `--no-browser` | Don't auto-open the browser |
+| `-h, --help` | Show help |
+| `-V, --version` | Show version |
 
 ## Attribution & License
 
@@ -52,14 +110,14 @@ HTTP client); everything else uses the Python stdlib.
 ## Files
 
 ```
-cybercodewebui/
+cybercode-cli/
 ├── package.json       # npm package config (bin, files, metadata)
 ├── bin/
 │   └── cli.mjs        # Node.js launcher (finds Python, bootstraps, opens browser)
 ├── python/
 │   ├── agent_core.py       # Self-contained agent core (LLM client + loop + 9 tools + memory)
-│   ├── cybercodewebui.py      # stdlib HTTP server + SSE + API
-│   └── cybercodewebui.html    # Codex-dark UI (single file, no build step)
+│   ├── cybercodewebui.py   # stdlib HTTP server + SSE + API
+│   └── cybercodewebui.html # Codex-dark UI (single file, no build step)
 ├── skills/             # HyperFrames video skills (12 files, from HeyGen)
 ├── templates/
 │   └── mykey_template.json  # API key template (auto-copied on first run)
@@ -67,7 +125,7 @@ cybercodewebui/
 └── README.md           # This file
 ```
 
-## Manual (without npx)
+## Manual (without npm)
 
 If you prefer to run the Python server directly:
 
@@ -100,6 +158,7 @@ Any OpenAI-compatible chat completions endpoint works:
 - **MiniMax**
 - **Local models** via Ollama, LM Studio, vLLM, etc.
 - **Anthropic Claude** via OpenAI-compatible proxies
+- **l0veyou** backend (built-in login support)
 
 ## What works
 
@@ -114,11 +173,14 @@ Any OpenAI-compatible chat completions endpoint works:
 | **Skills panel (sidebar)** | `/api/skills` → lists `memory/` SOPs and skill files |
 | **Suggest tasks** | prefills the autonomous-planning prompt |
 | **Status dot** | `agent.is_running` polled every 4s |
-| **Tool / file refs** | `🛠️ Tool: \`name\`` lines → tool chips; `[FILE:path]` → clickable file chips |
-| **Turn folding** | `**LLM Running (Turn N) ...**` markers → collapsible turn sections |
+| **Tool / file refs** | tool chips; `[FILE:path]` → clickable file chips |
+| **Turn folding** | collapsible turn sections |
 | **Make video button** | Injects HyperFrames skill preamble + `/video` command |
 | **Video gallery** | `/api/videos` → scans for rendered `.mp4` files |
 | **Video playback** | `/api/video/<path>` → streams with Range support (seekable) |
+| **Login overlay** | Web UI login (requires l0veyou backend) |
+| **Image generation** | Built-in image generation panel |
+| **Video generation** | Built-in video generation panel |
 
 ## The 9 Atomic Tools
 
@@ -168,7 +230,4 @@ and can be played inline.
 
 MIT License — see `LICENSE` for full text.
 
-This project's agent core was developed with reference to
-[GenericAgent](https://github.com/lsdefine/GenericAgent) (MIT, Copyright © 2025
-lsdefine). The GenericAgent copyright notice is included in `LICENSE` as
-required by its license terms. HyperFrames skills are MIT-licensed by HeyGen.
+[中文文档](README_CN.md) | [English](README.md)
