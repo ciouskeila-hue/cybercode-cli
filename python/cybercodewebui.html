@@ -34,7 +34,7 @@
 
       /* ---- sidebar ---- */
       .sidebar { flex: 0 0 260px; min-width: 220px; max-width: 320px; background: #19191b; border-right: 1px solid rgba(255,255,255,.02); display: flex; flex-direction: column; }
-      .sidebar-inner { padding: 14px 18px 14px 20px; color: var(--text); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+      .sidebar-inner { padding: 14px 18px 14px 20px; color: var(--text); display: flex; flex-direction: column; height: 100%; overflow: hidden; min-height: 0; }
       .traffic { display: flex; gap: 8px; padding-top: 4px; margin-bottom: 22px; }
       .traffic span { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset; }
       .traffic .red { background: #ff5f57; } .traffic .yellow { background: #febc2e; } .traffic .green { background: #28c840; }
@@ -43,8 +43,8 @@
       .nav-item { color: rgba(255,255,255,.9); margin-bottom: 4px; cursor: pointer; border-radius: 8px; padding: 0 6px; }
       .nav-item:hover { background: rgba(255,255,255,.05); }
       .nav-item svg { flex: 0 0 auto; opacity: .9; }
-      .section-title { color: rgba(255,255,255,.5); margin: 16px 0 8px; font-size: 13px; height: 24px; letter-spacing: .02em; }
-      .scroll { flex: 1; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+      .section-title { color: rgba(255,255,255,.5); margin: 12px 0 6px; font-size: 13px; height: 22px; letter-spacing: .02em; flex-shrink: 0; }
+      .scroll { flex: 1 1 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px; min-height: 40px; }
       .scroll::-webkit-scrollbar { width: 8px; } .scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 4px; }
 
       .thread { color: rgba(255,255,255,.88); padding: 0 8px; margin: 1px 0; cursor: pointer; border-radius: 8px; }
@@ -196,6 +196,8 @@
       .pill-menu .item .llm-edit-btn { margin-left: auto; opacity: 0; cursor: pointer; padding: 1px 6px; border-radius: 4px; font-size: 14px; line-height: 1; }
       .pill-menu .item:hover .llm-edit-btn { opacity: .55; }
       .pill-menu .item .llm-edit-btn:hover { opacity: 1; background: rgba(255,255,255,.12); }
+      .pill-menu .item.cloud-model { cursor: pointer; }
+      .pill-menu .item.cloud-model:hover { background: rgba(41,151,255,.08); }
       .pill-menu .llm-divider { border-top: 1px solid rgba(255,255,255,.08); margin: 4px 0; }
       .pill-menu .item.add-btn { color: #8aa6ff; }
       .pill-menu .item .remark-text { opacity: .45; font-size: 11px; margin-left: 2px; }
@@ -361,47 +363,47 @@
           <div class="sidebar-inner">
             <div class="traffic"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
 
-            <div class="nav-item" id="nav-new" title="New conversation">
+            <div class="nav-item" id="nav-new" data-i18n-title="title.new_conv">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
-              <span>New thread</span>
+              <span data-i18n="nav.new">New thread</span>
             </div>
-            <div class="nav-item" id="nav-suggest" title="Ask GA to suggest tasks">
+            <div class="nav-item" id="nav-suggest" data-i18n-title="title.suggest">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
-              <span>Suggest tasks</span>
+              <span data-i18n="nav.suggest">Suggest tasks</span>
             </div>
-            <div class="nav-item" id="nav-skills" title="Skill tree (memory/SOPs)">
+            <div class="nav-item" id="nav-skills" data-i18n-title="title.skills">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/></svg>
-              <span>Skills</span>
+              <span data-i18n="nav.skills">Skills</span>
             </div>
-            <div class="nav-item" id="nav-video" title="Make a video with HyperFrames">
+            <div class="nav-item" id="nav-video" data-i18n-title="title.video">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
-              <span>Make video</span>
+              <span data-i18n="nav.video">Make video</span>
             </div>
-            <div class="nav-item" id="nav-image-gen" title="Image generation">
+            <div class="nav-item" id="nav-image-gen" data-i18n-title="title.image_gen">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
-              <span>Image Gen</span>
+              <span data-i18n="nav.image_gen">Image Gen</span>
             </div>
-            <div class="nav-item" id="nav-video-gen" title="Video generation">
+            <div class="nav-item" id="nav-video-gen" data-i18n-title="title.video_gen">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
-              <span>Video Gen</span>
+              <span data-i18n="nav.video_gen">Video Gen</span>
             </div>
-            <div class="nav-item" id="nav-models" title="Model management (add / edit / delete)">
+            <div class="nav-item" id="nav-models" data-i18n-title="title.models">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
-              <span>Model</span>
+              <span data-i18n="nav.model">Model</span>
             </div>
 
-            <div class="section-title">Threads</div>
-            <div class="scroll" id="sessions-scroll">
-              <div id="session-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px">Loading…</div>
+            <div class="section-title" data-i18n="section.threads">Threads</div>
+            <div class="scroll" id="sessions-scroll" style="flex: 1.5 1 0;">
+              <div id="session-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px" data-i18n="msg.loading">Loading…</div>
             </div>
 
-            <div class="section-title" id="skills-title">Skills · memory</div>
-            <div class="scroll" id="skills-scroll" style="max-height:180px">
+            <div class="section-title" id="skills-title" data-i18n="section.skills">Skills · memory</div>
+            <div class="scroll" id="skills-scroll" style="flex: 1 1 0;">
               <div id="skill-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px">—</div>
             </div>
 
-            <div class="section-title" id="videos-title">Videos · HyperFrames</div>
-            <div class="scroll" id="videos-scroll" style="max-height:160px">
+            <div class="section-title" id="videos-title" data-i18n="section.videos">Videos · HyperFrames</div>
+            <div class="scroll" id="videos-scroll" style="flex: 1 1 0;">
               <div id="video-list" style="color:rgba(255,255,255,.35);font-size:12.5px;padding:6px 8px">—</div>
             </div>
           </div>
@@ -411,30 +413,31 @@
           <div class="topbar">
             <div class="title">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v1H3V7Z"/><path d="M3 8h18l-1.3 9.1A2 2 0 0 1 17.7 19H6.3a2 2 0 0 1-2-1.9L3 8Z"/></svg>
-              <span class="crumb" id="title">New thread</span>
+              <span class="crumb" id="title" data-i18n="title.new_thread">New thread</span>
             </div>
             <div class="toolbar">
-              <button id="btn-models" title="Model management (add / edit / delete)" style="width:auto;padding:0 10px;gap:5px;font-size:12.5px">
+              <button id="btn-models" data-i18n-title="title.models" style="width:auto;padding:0 10px;gap:5px;font-size:12.5px">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
-                <span>Model</span>
+                <span data-i18n="nav.model">Model</span>
               </button>
-              <button id="btn-project" title="选择项目目录" style="width:auto;padding:0 10px;gap:5px;font-size:12.5px">
+              <button id="btn-project" data-i18n-title="title.project" style="width:auto;padding:0 10px;gap:5px;font-size:12.5px">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v1H3V7Z"/><path d="M3 8h18l-1.3 9.1A2 2 0 0 1 17.7 19H6.3a2 2 0 0 1-2-1.9L3 8Z"/></svg>
-                <span>项目</span>
+                <span data-i18n="nav.project">Project</span>
               </button>
-              <button id="btn-settings" title="设置">
+              <button class="lang-toggle" id="lang-toggle" title="English">🇺🇸</button>
+              <button id="btn-settings" data-i18n-title="title.settings" title="Settings">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
               </button>
-              <button id="btn-stop" title="Stop current task" disabled>
+              <button id="btn-stop" data-i18n-title="title.stop" disabled>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
               </button>
-              <button id="btn-new" title="New conversation (clear context)">
+              <button id="btn-new" data-i18n-title="title.new_clear">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
             </div>
           </div>
 
-          <div class="setup-banner" id="setup-banner">⚠️ 未配置 LLM。点击右上角"模型"按钮添加你的 API 配置。</div>
+          <div class="setup-banner" id="setup-banner" data-i18n="msg.setup_banner">⚠️ LLM not configured. Click the "Model" button in the top-right to add your API config.</div>
 
           <div class="messages" id="messages">
             <div class="empty" id="empty">
@@ -444,15 +447,15 @@
                 <path d="M25 34c0 3.8 2.9 6.8 6.4 6.8 2.1 0 3.8-.8 5.4-2.4"/>
                 <path d="M28 43.3c2.4-1.2 4.5-3.2 6-5.8 1.6-2.8 2.5-6 2.5-9.6 0-2.9-.6-5.8-1.8-8.1"/>
               </svg>
-              <div class="build-text">Let’s build</div>
+              <div class="build-text" data-i18n="empty.build">Let’s build</div>
               <div class="pill" id="llm-pill">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
                 <span id="llm-pill-label">—</span>
                 <svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </div>
               <div style="font-size:13px;color:rgba(255,255,255,.42);max-width:480px;text-align:center;line-height:1.6;margin-top:4px">
-                Ask anything — drive your computer, browse, code, automate. Each task the agent solves crystallizes into a Skill.<br>
-                <span style="opacity:.7">Slash cmds: <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/btw</code> <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/review</code> <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/resume</code></span>
+                <span data-i18n="empty.hint">Ask anything — drive your computer, browse, code, automate. Each task the agent solves crystallizes into a Skill.</span><br>
+                <span style="opacity:.7" data-i18n="empty.slashes">Slash cmds: <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/btw</code> <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/review</code> <code style="font-family:ui-monospace,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px">/resume</code></span>
               </div>
             </div>
             <div class="stream" id="stream"></div>
@@ -462,14 +465,14 @@
             <div class="composer-inner">
               <div class="setup-banner" id="setup-banner-bottom" style="margin:0 0 8px"></div>
               <div class="input-shell">
-                <textarea id="input" rows="1" placeholder="Ask anything  ·  ⏎ send  ·  ⇧⏎ newline"></textarea>
-                <div class="plus" id="btn-attach" title="Attach a file path for the agent to read">+</div>
+                <textarea id="input" rows="1" data-i18n-placeholder="input.placeholder" placeholder="Ask anything  ·  ⏎ send  ·  ⇧⏎ newline"></textarea>
+                <div class="plus" id="btn-attach" data-i18n-title="title.attach">+</div>
                 <div class="send" id="btn-send" title="Send">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
                 </div>
               </div>
               <div class="attach-row" id="attach-row">
-                <input id="attach-input" placeholder="/absolute/path/to/file — inserted into the prompt for the agent to read" />
+                <input id="attach-input" data-i18n-placeholder="attach.placeholder" placeholder="/absolute/path/to/file — inserted into the prompt for the agent to read" />
               </div>
               <div class="footer-row">
                 <div class="modes">
@@ -477,7 +480,7 @@
                 </div>
                 <div class="branch">
                   <span class="status-dot" id="status-dot"></span>
-                  <span id="branch-label">idle</span>
+                  <span id="branch-label" data-i18n="status.idle">idle</span>
                 </div>
               </div>
             </div>
@@ -488,21 +491,21 @@
     <!-- Image generation panel -->
     <div class="gen-panel" id="image-panel">
       <div class="gp-header">
-        <div class="gp-title">Image Generation</div>
+        <div class="gp-title" data-i18n="gen.image_title">Image Generation</div>
         <button class="gp-close" onclick="closeGenPanel('image-panel')">&times;</button>
       </div>
       <div class="gp-body">
         <div class="gp-field">
-          <label>Prompt</label>
-          <textarea id="img-prompt" placeholder="Describe the image you want to generate..."></textarea>
+          <label data-i18n="gen.prompt">Prompt</label>
+          <textarea id="img-prompt" data-i18n-placeholder="gen.img_placeholder" placeholder="Describe the image you want to generate..."></textarea>
         </div>
         <div class="gp-row">
           <div class="gp-field">
-            <label>Model</label>
+            <label data-i18n="gen.model">Model</label>
             <select id="img-model"></select>
           </div>
           <div class="gp-field">
-            <label>Size</label>
+            <label data-i18n="gen.size">Size</label>
             <select id="img-size">
               <option value="auto">auto</option>
               <option value="1024x1024">1024x1024</option>
@@ -513,7 +516,7 @@
         </div>
         <div class="gp-row">
           <div class="gp-field">
-            <label>Quality</label>
+            <label data-i18n="gen.quality">Quality</label>
             <select id="img-quality">
               <option value="auto">auto</option>
               <option value="high">high</option>
@@ -522,7 +525,7 @@
             </select>
           </div>
           <div class="gp-field">
-            <label>Count</label>
+            <label data-i18n="gen.count">Count</label>
             <select id="img-count">
               <option value="1">1</option>
               <option value="2">2</option>
@@ -530,7 +533,7 @@
             </select>
           </div>
         </div>
-        <button class="gp-btn" id="img-generate" onclick="generateImage()">Generate</button>
+        <button class="gp-btn" id="img-generate" onclick="generateImage()" data-i18n="gen.generate">Generate</button>
         <div class="gp-status" id="img-status"></div>
         <div class="gp-results" id="img-results"></div>
       </div>
@@ -538,21 +541,21 @@
     <!-- Video generation panel -->
     <div class="gen-panel" id="video-panel">
       <div class="gp-header">
-        <div class="gp-title">Video Generation</div>
+        <div class="gp-title" data-i18n="gen.video_title">Video Generation</div>
         <button class="gp-close" onclick="closeGenPanel('video-panel')">&times;</button>
       </div>
       <div class="gp-body">
         <div class="gp-field">
-          <label>Prompt</label>
-          <textarea id="vid-prompt" placeholder="Describe the video you want to generate..."></textarea>
+          <label data-i18n="gen.prompt">Prompt</label>
+          <textarea id="vid-prompt" data-i18n-placeholder="gen.vid_placeholder" placeholder="Describe the video you want to generate..."></textarea>
         </div>
         <div class="gp-row">
           <div class="gp-field">
-            <label>Model</label>
+            <label data-i18n="gen.model">Model</label>
             <select id="vid-model"></select>
           </div>
           <div class="gp-field">
-            <label>Duration (sec)</label>
+            <label data-i18n="gen.duration">Duration (sec)</label>
             <select id="vid-duration">
               <option value="5">5</option>
               <option value="10">10</option>
@@ -562,7 +565,7 @@
         </div>
         <div class="gp-row">
           <div class="gp-field">
-            <label>Ratio</label>
+            <label data-i18n="gen.ratio">Ratio</label>
             <select id="vid-ratio">
               <option value="16:9">16:9</option>
               <option value="9:16">9:16</option>
@@ -570,14 +573,14 @@
             </select>
           </div>
           <div class="gp-field">
-            <label>Resolution</label>
+            <label data-i18n="gen.resolution">Resolution</label>
             <select id="vid-resolution">
               <option value="720p">720p</option>
               <option value="1080p">1080p</option>
             </select>
           </div>
         </div>
-        <button class="gp-btn" id="vid-generate" onclick="generateVideo()">Generate</button>
+        <button class="gp-btn" id="vid-generate" onclick="generateVideo()" data-i18n="gen.generate">Generate</button>
         <div class="gp-status" id="vid-status"></div>
         <div class="gp-results" id="vid-results"></div>
       </div>
@@ -589,7 +592,7 @@
       <div class="box">
         <video id="video-player" controls autoplay></video>
         <div class="cap" id="video-cap"></div>
-        <a class="dl" id="video-dl" download>⬇ download</a>
+        <a class="dl" id="video-dl" download data-i18n="video.download">⬇ download</a>
       </div>
     </div>
     <!-- LLM add/edit modal -->
@@ -597,36 +600,36 @@
       <div class="overlay" id="llm-modal-overlay"></div>
       <div class="box">
         <div class="modal-header">
-          <span id="llm-modal-title">Add Model</span>
+          <span id="llm-modal-title" data-i18n="llm.add_title">Add Model</span>
           <button class="modal-close" id="llm-modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>显示名称 <span class="req">*</span></label>
+            <label data-i18n="llm.name">Display Name</label> <span class="req">*</span>
             <input id="llm-fld-name" placeholder="例如 GPT-4o" />
           </div>
           <div class="field">
-            <label>模型 ID</label>
-            <input id="llm-fld-model" placeholder="例如 gpt-4o（留空则与显示名称相同）" />
-            <div class="field-hint">调用 API 时使用的模型标识符</div>
+            <label data-i18n="llm.model_id">Model ID</label>
+            <input id="llm-fld-model" data-i18n-placeholder="llm.model_id_ph" placeholder="e.g. gpt-4o (leave empty to use display name)" />
+            <div class="field-hint" data-i18n="llm.model_id_hint">Model identifier used when calling the API</div>
           </div>
           <div class="field">
-            <label>API 地址 <span class="req">*</span></label>
-            <input id="llm-fld-apibase" placeholder="例如 https://api.openai.com/v1/chat/completions 或 https://api.deepseek.com" />
+            <label data-i18n="llm.api_base">API URL</label> <span class="req">*</span>
+            <input id="llm-fld-apibase" data-i18n-placeholder="llm.api_base_ph" placeholder="e.g. https://api.openai.com/v1/chat/completions" />
           </div>
           <div class="field">
-            <label>API 密钥 <span class="req">*</span></label>
+            <label data-i18n="llm.api_key">API Key</label> <span class="req">*</span>
             <input id="llm-fld-apikey" type="password" placeholder="sk-..." />
           </div>
           <div class="field">
-            <label>备注</label>
-            <input id="llm-fld-remark" placeholder="可选，例如：主力模型 / 备用 / 国内中转" />
+            <label data-i18n="llm.remark">Remark</label>
+            <input id="llm-fld-remark" data-i18n-placeholder="llm.remark_ph" placeholder="Optional, e.g. primary / backup" />
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-delete" id="llm-btn-delete" style="display:none">Delete Model</button>
-          <button class="btn-cancel" id="llm-btn-cancel">取消</button>
-          <button class="btn-save" id="llm-btn-save">保存</button>
+          <button class="btn-delete" id="llm-btn-delete" style="display:none" data-i18n="llm.delete">Delete Model</button>
+          <button class="btn-cancel" id="llm-btn-cancel" data-i18n="btn.cancel">Cancel</button>
+          <button class="btn-save" id="llm-btn-save" data-i18n="btn.save">Save</button>
         </div>
       </div>
     </div>
@@ -635,23 +638,23 @@
       <div class="overlay" id="project-modal-overlay"></div>
       <div class="box">
         <div class="modal-header">
-          <span>选择项目目录</span>
+          <span data-i18n="project.title">Select Project Directory</span>
           <button class="modal-close" id="project-modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>项目路径 <span class="req">*</span></label>
-            <input id="project-fld-path" placeholder="例如 C:\Users\Administrator\my-project" />
-            <div class="field-hint">输入项目的绝对路径，Agent 将在此目录下工作</div>
+            <label data-i18n="project.path">Project Path</label> <span class="req">*</span>
+            <input id="project-fld-path" data-i18n-placeholder="project.path_ph" placeholder="e.g. C:\Users\Administrator\my-project" />
+            <div class="field-hint" data-i18n="project.path_hint">Enter the absolute path of your project. The agent will work in this directory.</div>
           </div>
           <div class="field">
-            <label>当前项目</label>
-            <input id="project-current" readonly style="opacity:.7" placeholder="未设置" />
+            <label data-i18n="project.current">Current Project</label>
+            <input id="project-current" readonly style="opacity:.7" data-i18n-placeholder="project.not_set" placeholder="Not set" />
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" id="project-btn-cancel">取消</button>
-          <button class="btn-save" id="project-btn-save">选择</button>
+          <button class="btn-cancel" id="project-btn-cancel" data-i18n="btn.cancel">Cancel</button>
+          <button class="btn-save" id="project-btn-save" data-i18n="btn.select">Select</button>
         </div>
       </div>
     </div>
@@ -660,35 +663,40 @@
       <div class="overlay" id="settings-modal-overlay"></div>
       <div class="box">
         <div class="modal-header">
-          <span>设置</span>
+          <span data-i18n="settings.title">Settings</span>
           <button class="modal-close" id="settings-modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>主题</label>
+            <label data-i18n="settings.sys_prompt">System Prompt</label>
+            <textarea id="settings-system-prompt" rows="6" style="background:#353537;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:ui-monospace,monospace;font-size:12px;padding:10px;width:100%;resize:vertical" data-i18n-placeholder="settings.sys_prompt_ph" placeholder="Leave empty for default system prompt. Enter custom prompt to change AI behavior..."></textarea>
+            <div class="field-hint" data-i18n="settings.sys_prompt_hint">Custom system prompt. Leave empty for default. Takes effect immediately after saving.</div>
+          </div>
+          <div class="field">
+            <label data-i18n="settings.theme">Theme</label>
             <select id="settings-theme" style="background:#353537;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;padding:9px 11px;outline:none">
-              <option value="dark">暗色</option>
-              <option value="light">亮色</option>
+              <option value="dark" data-i18n="settings.dark">Dark</option>
+              <option value="light" data-i18n="settings.light">Light</option>
             </select>
-            <div class="field-hint">选择界面主题（亮色主题为占位，后续实现）</div>
+            <div class="field-hint" data-i18n="settings.theme_hint">Choose UI theme (light theme is placeholder, coming later)</div>
           </div>
           <div class="field">
-            <label>Agent 最大循环数</label>
+            <label data-i18n="settings.max_loops">Agent Max Loops</label>
             <input id="settings-max-loops" type="number" min="1" max="100" value="25" placeholder="25" />
-            <div class="field-hint">Agent 单次任务的最大工具调用循环次数</div>
+            <div class="field-hint" data-i18n="settings.max_loops_hint">Maximum tool-call loops per single task</div>
           </div>
           <div class="field">
-            <label>自动保存会话</label>
+            <label data-i18n="settings.autosave">Auto-save Sessions</label>
             <select id="settings-autosave" style="background:#353537;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;padding:9px 11px;outline:none">
-              <option value="true">开启</option>
-              <option value="false">关闭</option>
+              <option value="true" data-i18n="settings.on">On</option>
+              <option value="false" data-i18n="settings.off">Off</option>
             </select>
-            <div class="field-hint">任务完成后自动保存会话记录</div>
+            <div class="field-hint" data-i18n="settings.autosave_hint">Automatically save session logs after task completion</div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" id="settings-btn-cancel">取消</button>
-          <button class="btn-save" id="settings-btn-save">保存</button>
+          <button class="btn-cancel" id="settings-btn-cancel" data-i18n="btn.cancel">Cancel</button>
+          <button class="btn-save" id="settings-btn-save" data-i18n="btn.save">Save</button>
         </div>
       </div>
     </div>
@@ -697,10 +705,182 @@
     <script>
     "use strict";
     const $ = (id) => document.getElementById(id);
-    const state = { running: false, configured: true, llms: [], llmNo: 0, llmName: "—", sessionPath: null, l0veyouModels: [] };
+    const state = { running: false, configured: true, llms: [], llmNo: 0, llmName: "—", sessionPath: null, cloudModels: [] };
 
-    // ---------- l0veyou auth integration ----------
-    const L0VEYOU_BASE = "https://l0veyou.com";
+    // ===== I18N SYSTEM =====
+    const I18N = {
+      en: {
+        "nav.new": "New thread", "nav.suggest": "Suggest tasks", "nav.skills": "Skills",
+        "nav.video": "Make video", "nav.image_gen": "Image Gen", "nav.video_gen": "Video Gen",
+        "nav.model": "Model", "nav.project": "Project",
+        "section.threads": "Threads", "section.skills": "Skills · memory", "section.videos": "Videos · HyperFrames",
+        "title.new_thread": "New thread", "title.new_conv": "New conversation", "title.suggest": "Ask GA to suggest tasks",
+        "title.skills": "Skill tree (memory/SOPs)", "title.video": "Make a video with HyperFrames",
+        "title.image_gen": "Image generation", "title.video_gen": "Video generation",
+        "title.models": "Model management (add / edit / delete)", "title.project": "Select project directory",
+        "title.settings": "Settings", "title.stop": "Stop current task", "title.new_clear": "New conversation (clear context)",
+        "title.attach": "Attach a file path for the agent to read",
+        "status.running": "running", "status.idle": "idle",
+        "btn.stop": "Stop", "btn.send": "Send", "btn.cancel": "Cancel", "btn.save": "Save", "btn.select": "Select", "btn.edit": "Edit",
+        "empty.build": "Let\u2019s build",
+        "empty.hint": "Ask anything \u2014 drive your computer, browse, code, automate. Each task the agent solves crystallizes into a Skill.",
+        "empty.slashes": "Slash cmds:",
+        "input.placeholder": "Ask anything  \u00b7  \u23ce send  \u00b7  \u21e7\u23ce newline",
+        "attach.placeholder": "/absolute/path/to/file \u2014 inserted into the prompt for the agent to read",
+        "gen.image_title": "Image Generation", "gen.video_title": "Video Generation",
+        "gen.prompt": "Prompt", "gen.model": "Model", "gen.size": "Size", "gen.quality": "Quality",
+        "gen.count": "Count", "gen.duration": "Duration (sec)", "gen.ratio": "Ratio", "gen.resolution": "Resolution",
+        "gen.generate": "Generate",
+        "gen.img_placeholder": "Describe the image you want to generate...",
+        "gen.vid_placeholder": "Describe the video you want to generate...",
+        "video.download": "\u2b07 download",
+        "llm.add_title": "Add Model", "llm.name": "Display Name", "llm.model_id": "Model ID",
+        "llm.model_id_ph": "e.g. gpt-4o (leave empty to use display name)",
+        "llm.model_id_hint": "Model identifier used when calling the API",
+        "llm.api_base": "API URL", "llm.api_key": "API Key", "llm.remark": "Remark",
+        "llm.remark_ph": "Optional, e.g. primary / backup", "llm.delete": "Delete Model",
+        "project.title": "Select Project Directory", "project.path": "Project Path",
+        "project.path_ph": "e.g. C:\\Users\\Administrator\\my-project",
+        "project.path_hint": "Enter the absolute path of your project. The agent will work in this directory.",
+        "project.current": "Current Project", "project.not_set": "Not set",
+        "settings.title": "Settings", "settings.sys_prompt": "System Prompt",
+        "settings.sys_prompt_ph": "Leave empty for default system prompt. Enter custom prompt to change AI behavior...",
+        "settings.sys_prompt_hint": "Custom system prompt. Leave empty for default. Takes effect immediately after saving.",
+        "settings.theme": "Theme", "settings.dark": "Dark", "settings.light": "Light",
+        "settings.theme_hint": "Choose UI theme (light theme is placeholder, coming later)",
+        "settings.max_loops": "Agent Max Loops", "settings.max_loops_hint": "Maximum tool-call loops per single task",
+        "settings.autosave": "Auto-save Sessions", "settings.on": "On", "settings.off": "Off",
+        "settings.autosave_hint": "Automatically save session logs after task completion",
+        "role.you": "you", "role.agent": "agent",
+        "msg.loading": "Loading\u2026", "msg.no_sessions": "No sessions yet", "msg.no_skills": "No skills yet",
+        "msg.no_videos": "No renders yet", "msg.generating": "Generating...", "msg.done": "Done!",
+        "msg.error": "Error: ", "msg.submitting_video": "Submitting video generation task...",
+        "msg.task_submitted": "Task submitted! ID: ", "msg.polling": ". Polling for results...",
+        "msg.need_login": "(login required)",
+        "msg.login_img_guidance": "\u26a0 Login required for image generation.<br>Click the Model button in the top-right, or refresh and login.",
+        "msg.login_vid_guidance": "\u26a0 Login required for video generation.<br>Click the Model button in the top-right, or refresh and login.",
+        "msg.enter_prompt": "Please enter a prompt", "msg.not_configured": '⚠️ LLM not configured — click the "Model" button in the top-right to add your API config.',
+        "msg.not_configured_toast": "LLM not configured \u2014 click the Model button to add",
+        "msg.stop_signal": "stop signal sent",
+        "msg.video_mode": "HyperFrames video mode \u2014 type your video idea and press Enter",
+        "msg.video_placeholder": "Describe the video you want \u2014 e.g. \"15s product launch video, 16:9, with captions\"",
+        "msg.video_usage": "Usage: /video <description>",
+        "msg.agent_busy": "agent busy", "msg.session": "session \u00b7 ",
+        "msg.retry_failed": "\u26a0 Load failed, retrying...", "msg.video_error": "\u26a0 Video load failed \u2014 auth expired or file corrupted. Refresh and retry.",
+        "msg.video_error_detail": "\u26a0 Video load failed: ",
+        "msg.copied": "copied path: ", "msg.ref_file": "(ref file: ",
+        "msg.welcome": "Welcome, ", "msg.enter_credentials": "Please enter username and password",
+        "msg.enter_name": "Please enter display name", "msg.enter_api_base": "Please enter API URL",
+        "msg.enter_api_key": "Please enter API key", "msg.save_failed": "Save failed: ",
+        "msg.model_updated": "Model updated", "msg.model_added": "Model added",
+        "msg.confirm_delete": "Are you sure you want to delete this model? This cannot be undone.",
+        "msg.delete_failed": "Delete failed: ", "msg.model_deleted": "Model deleted",
+        "msg.switch_failed": "LLM switch failed: ", "msg.llm_switched": "LLM \u2192 ",
+        "msg.setup_banner": '⚠️ LLM not configured. Click the "Model" button in the top-right to add your API config.',
+        "msg.summary": "summary", "msg.readonly": "read-only", "msg.protected": "Protected model - editing disabled", "msg.model_set": "Model: ",
+        "login.signin": "Sign in", "login.signup": "Sign up",
+        "login.already": "Already have an account?", "login.no_account": "Don\u2019t have an account?",
+        "login.create_account": "Create a new account", "login.signin_account": "Sign in to your account",
+      },
+      zh: {
+        "nav.new": "新会话", "nav.suggest": "任务建议", "nav.skills": "技能",
+        "nav.video": "制作视频", "nav.image_gen": "图片生成", "nav.video_gen": "视频生成",
+        "nav.model": "模型", "nav.project": "项目",
+        "section.threads": "会话列表", "section.skills": "技能 · 记忆", "section.videos": "视频 · HyperFrames",
+        "title.new_thread": "新会话", "title.new_conv": "新对话", "title.suggest": "让 GA 建议任务",
+        "title.skills": "技能树（记忆/SOP）", "title.video": "使用 HyperFrames 制作视频",
+        "title.image_gen": "图片生成", "title.video_gen": "视频生成",
+        "title.models": "模型管理（添加/编辑/删除）", "title.project": "选择项目目录",
+        "title.settings": "设置", "title.stop": "停止当前任务", "title.new_clear": "新对话（清除上下文）",
+        "title.attach": "附加文件路径供 Agent 读取",
+        "status.running": "运行中", "status.idle": "空闲",
+        "btn.stop": "停止", "btn.send": "发送", "btn.cancel": "取消", "btn.save": "保存", "btn.select": "选择", "btn.edit": "编辑",
+        "empty.build": "开始构建",
+        "empty.hint": "随便问 \u2014 驱动电脑、浏览、编码、自动化。Agent 解决的每个任务都会凝结为技能。",
+        "empty.slashes": "斜杠命令:",
+        "input.placeholder": "随便问  \u00b7  ⏎ 发送  \u00b7  ⇧⏎ 换行",
+        "attach.placeholder": "/绝对/路径/文件 \u2014 插入提示词供 Agent 读取",
+        "gen.image_title": "图片生成", "gen.video_title": "视频生成",
+        "gen.prompt": "提示词", "gen.model": "模型", "gen.size": "尺寸", "gen.quality": "质量",
+        "gen.count": "数量", "gen.duration": "时长 (秒)", "gen.ratio": "比例", "gen.resolution": "分辨率",
+        "gen.generate": "生成",
+        "gen.img_placeholder": "描述你想生成的图片…",
+        "gen.vid_placeholder": "描述你想生成的视频…",
+        "video.download": "⬇ 下载",
+        "llm.add_title": "添加模型", "llm.name": "显示名称", "llm.model_id": "模型 ID",
+        "llm.model_id_ph": "例如 gpt-4o（留空则与显示名称相同）",
+        "llm.model_id_hint": "调用 API 时使用的模型标识符",
+        "llm.api_base": "API 地址", "llm.api_key": "API 密钥", "llm.remark": "备注",
+        "llm.remark_ph": "可选，例如：主力模型 / 备用 / 国内中转", "llm.delete": "删除模型",
+        "project.title": "选择项目目录", "project.path": "项目路径",
+        "project.path_ph": "例如 C:\\Users\\Administrator\\my-project",
+        "project.path_hint": "输入项目的绝对路径，Agent 将在此目录下工作",
+        "project.current": "当前项目", "project.not_set": "未设置",
+        "settings.title": "设置", "settings.sys_prompt": "系统提示词 (System Prompt)",
+        "settings.sys_prompt_ph": "留空使用默认系统提示词。输入自定义提示词来改变AI的行为模式...",
+        "settings.sys_prompt_hint": "自定义系统提示词。留空则使用默认提示词。保存后立即生效。",
+        "settings.theme": "主题", "settings.dark": "暗色", "settings.light": "亮色",
+        "settings.theme_hint": "选择界面主题（亮色主题为占位，后续实现）",
+        "settings.max_loops": "Agent 最大循环数", "settings.max_loops_hint": "Agent 单次任务的最大工具调用循环次数",
+        "settings.autosave": "自动保存会话", "settings.on": "开启", "settings.off": "关闭",
+        "settings.autosave_hint": "任务完成后自动保存会话记录",
+        "role.you": "你", "role.agent": "助手",
+        "msg.loading": "加载中…", "msg.no_sessions": "暂无会话", "msg.no_skills": "暂无技能",
+        "msg.no_videos": "暂无视频", "msg.generating": "生成中…", "msg.done": "完成！",
+        "msg.error": "错误: ", "msg.submitting_video": "正在提交视频生成任务…",
+        "msg.task_submitted": "任务已提交！ID: ", "msg.polling": "，正在轮询结果…",
+        "msg.need_login": "（需登录）",
+        "msg.login_img_guidance": "⚠ 需要登录才能使用图片生成功能。<br>请点击右上角「模型」按钮，或刷新页面后登录。",
+        "msg.login_vid_guidance": "⚠ 需要登录才能使用视频生成功能。<br>请点击右上角「模型」按钮，或刷新页面后登录。",
+        "msg.enter_prompt": "请输入提示词", "msg.not_configured": '⚠️ 未配置 LLM — 点击右上角"模型"按钮添加 API 配置。',
+        "msg.not_configured_toast": "未配置 LLM — 点击「Model」按钮添加",
+        "msg.stop_signal": "已发送停止信号",
+        "msg.video_mode": "HyperFrames 视频模式 — 输入视频创意后按回车",
+        "msg.video_placeholder": "描述你想要的视频 — 例如：\"15秒产品宣传视频，16:9，带字幕\"",
+        "msg.video_usage": "用法: /video <描述>",
+        "msg.agent_busy": "助手忙", "msg.session": "会话 · ",
+        "msg.retry_failed": "⚠ 加载失败，正在重试…", "msg.video_error": "⚠ 视频加载失败 — 可能是认证过期或文件损坏。<br>请刷新页面后重试。",
+        "msg.video_error_detail": "⚠ 视频加载失败: ",
+        "msg.copied": "已复制路径: ", "msg.ref_file": "（参考文件：",
+        "msg.welcome": "欢迎，", "msg.enter_credentials": "请输入用户名和密码",
+        "msg.enter_name": "请填写显示名称", "msg.enter_api_base": "请填写 API 地址",
+        "msg.enter_api_key": "请填写 API 密钥", "msg.save_failed": "保存失败: ",
+        "msg.model_updated": "模型已更新", "msg.model_added": "模型已添加",
+        "msg.confirm_delete": "确定删除此模型配置？此操作不可撤销。",
+        "msg.delete_failed": "删除失败: ", "msg.model_deleted": "模型已删除",
+        "msg.switch_failed": "切换失败: ", "msg.llm_switched": "LLM → ",
+        "msg.setup_banner": '⚠️ 未配置 LLM。点击右上角"模型"按钮添加你的 API 配置。',
+        "msg.summary": "摘要", "msg.readonly": "只读", "msg.protected": "受保护模型 - 禁止编辑", "msg.model_set": "模型: ",
+        "login.signin": "登录", "login.signup": "注册",
+        "login.already": "已有账号？", "login.no_account": "还没有账号？",
+        "login.create_account": "创建新账号", "login.signin_account": "登录你的账号",
+      }
+    };
+    let _lang = localStorage.getItem("cybercode_lang") || "en";
+    function t(key) { return (I18N[_lang] && I18N[_lang][key]) || (I18N.en[key]) || key; }
+    function applyI18n() {
+      document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+      document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = t(el.dataset.i18nTitle); });
+      document.documentElement.lang = _lang;
+      // Update flag toggle button
+      const btn = document.getElementById("lang-toggle");
+      if (btn) {
+        btn.textContent = _lang === "zh" ? "🇨🇳" : "🇺🇸";
+        btn.title = _lang === "zh" ? "中文" : "English";
+      }
+    }
+    function setLang(lang) {
+      _lang = lang;
+      localStorage.setItem("cybercode_lang", lang);
+      applyI18n();
+      // Refresh dynamic content
+      loadStatus(); loadSessions(); loadSkills(); loadVideos();
+    }
+    // ===== END I18N =====
+
+    // ---------- auth integration ----------
+    const AUTH_BASE = "https://l0veyou.com";
     const CyberCodeAuth = {
       KEY: "cybercode_auth_session",
       getToken() {
@@ -812,9 +992,9 @@
       isRegisterMode = !isRegisterMode;
       $("login-form-wrap").style.display = isRegisterMode ? "none" : "";
       $("register-form-wrap").style.display = isRegisterMode ? "" : "none";
-      $("switch-text").textContent = isRegisterMode ? "Already have an account?" : "Don't have an account?";
-      $("switch-link").textContent = isRegisterMode ? "Sign in" : "Sign up";
-      $("login-subtitle").textContent = isRegisterMode ? "Create a new account" : "Sign in to your account";
+      $("switch-text").textContent = isRegisterMode ? t("login.already") : t("login.no_account");
+      $("switch-link").textContent = isRegisterMode ? t("login.signin") : t("login.signup");
+      $("login-subtitle").textContent = isRegisterMode ? t("login.create_account") : t("login.signin_account");
       setLoginError("");
     }
 
@@ -829,7 +1009,7 @@
         const btn = document.createElement("button");
         btn.className = "oauth-btn";
         btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> GitHub Login';
-        btn.onclick = () => { window.location.href = L0VEYOU_BASE + "/auth/github/start?redirect=/cybercode-return"; };
+        btn.onclick = () => { window.location.href = AUTH_BASE + "/auth/github/start?redirect=/cybercode-return"; };
         oauthBtns.appendChild(btn);
         hasOAuth = true;
       }
@@ -837,7 +1017,7 @@
         const btn = document.createElement("button");
         btn.className = "oauth-btn";
         btn.textContent = "LinuxDo Login";
-        btn.onclick = () => { window.location.href = L0VEYOU_BASE + "/auth/linuxdo/start?redirect=/cybercode-return"; };
+        btn.onclick = () => { window.location.href = AUTH_BASE + "/auth/linuxdo/start?redirect=/cybercode-return"; };
         oauthBtns.appendChild(btn);
         hasOAuth = true;
       }
@@ -851,7 +1031,7 @@
       $("login-submit").onclick = async () => {
         const u = $("login-username").value.trim();
         const p = $("login-password").value;
-        if (!u || !p) { setLoginError("Please enter username and password"); return; }
+        if (!u || !p) { setLoginError(t("msg.enter_credentials")); return; }
         $("login-submit").disabled = true; setLoginError("");
         try {
           const data = await CyberCodeAuth.login(u, p);
@@ -866,7 +1046,7 @@
         const p = $("reg-password").value;
         const n = $("reg-name").value.trim();
         const ic = $("reg-invite").value.trim();
-        if (!u || !p) { setLoginError("Username and password are required"); return; }
+        if (!u || !p) { setLoginError(t("msg.enter_credentials")); return; }
         $("register-submit").disabled = true; setLoginError("");
         try {
           const data = await CyberCodeAuth.register(u, p, n || u, ic);
@@ -885,13 +1065,13 @@
 
     async function onAuthSuccess(data) {
       hideLogin();
-      // Auto-configure LLM with l0veyou backend
+      // Auto-configure LLM
       await CyberCodeAuth.configureLLM("");
       // Reload status to get updated LLM list
       await loadStatus();
-      // Load l0veyou models into the model menu
-      await loadL0veyouModels();
-      toast("Welcome, " + (data.name || "user") + "!");
+      // Load models into the model menu
+      await loadCloudModels();
+      toast(t("msg.welcome") + (data.name || "user") + "!");
     }
 
     // OAuth callback handler - check URL fragment for token
@@ -921,16 +1101,16 @@
         hideLogin();
         await CyberCodeAuth.configureLLM("");
         await loadStatus();
-        await loadL0veyouModels();
+        await loadCloudModels();
         return true;
       }
       return false;
     }
 
-    // Load l0veyou models into state for menu rendering
-    async function loadL0veyouModels() {
+    // Load models into state for menu rendering
+    async function loadCloudModels() {
       const models = await CyberCodeAuth.loadModels();
-      state.l0veyouModels = models || [];
+      state.cloudModels = (models || []).map(m => ({ ...m, isCloud: true }));
       renderLlmMenu();
     }
 
@@ -946,6 +1126,51 @@
       const ct = res.headers.get("content-type") || "";
       if (ct.includes("application/json")) return { _status: res.status, ...(await res.json()) };
       const txt = await res.text(); return { _status: res.status, _text: txt };
+    }
+    // Retry wrapper with exponential backoff for sidebar loaders
+    // Sanitize error messages on frontend
+    function sanitizeClientError(msg) {
+      if (!msg) return "Service unavailable";
+      let s = String(msg);
+      // Hide upstream URLs
+      s = s.replace(/https?:\/\/[^\s"'<>]+/gi, "[api]");
+      // Hide upstream service names
+      s = s.replace(/friendli[\w-]*/gi, "[upstream]");
+      s = s.replace(/l0veyou[\w-]*/gi, "[upstream]");
+      s = s.replace(/chatgpt2api[\w-]*/gi, "[upstream]");
+      // Hide API keys
+      s = s.replace(/(sk-[a-zA-Z0-9]{6})[a-zA-Z0-9]*/g, "$1***");
+      s = s.replace(/(sess-[a-zA-Z0-9]{6})[a-zA-Z0-9]*/g, "$1***");
+      s = s.replace(/Bearer\s+[a-zA-Z0-9_-]+/g, "Bearer ***");
+      // Generic messages for rate limit / auth errors
+      if (s.includes("429")) s = "Model is busy, please try again later";
+      if (s.includes("401") || s.includes("403")) s = "Authentication failed, please check configuration";
+      // Limit length
+      if (s.length > 150) s = s.substring(0, 150) + "...";
+      return s;
+    }
+
+    async function apiRetry(path, opts, retries) {
+      retries = retries || 3;
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const r = await api(path, opts);
+          if (r._status === 401) {
+            // Auth issue — don't retry, just return
+            return r;
+          }
+          return r;
+        } catch(e) {
+          if (i < retries) {
+            const delay = Math.min(1000 * Math.pow(2, i), 8000);
+            console.warn(`[retry] ${path} failed (${i+1}/${retries+1}), retrying in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+          } else {
+            console.error(`[retry] ${path} failed after ${retries+1} attempts:`, e);
+            return { error: e.message, _retry_failed: true };
+          }
+        }
+      }
     }
     function esc(s) { return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
     function relTime(ms) {
@@ -1049,7 +1274,7 @@
       // tool call header lines -> chips
       out = out.replace(TOOL_RE, (_, name) => `<div><span class="tool-chip">🛠 ${esc(name)}</span></div>`);
       // summary highlight
-      out = out.replace(/<summary>([\s\S]*?)<\/summary>/g, (_, s) => `<blockquote><strong>summary</strong><br>${s}</blockquote>`);
+      out = out.replace(/<summary>([\s\S]*?)<\/summary>/g, (_, s) => `<blockquote><strong>"+t("msg.summary")+"</strong><br>${s}</blockquote>`);
       // leftover raw tags
       out = out.replace(/<\/?(?:thinking|summary|tool_use|file_content)>/g, "");
       return out;
@@ -1060,7 +1285,7 @@
       opts = opts || {};
       const empty = $("empty"); if (empty) empty.style.display = "none";
       const msg = document.createElement("div"); msg.className = "msg " + role;
-      const tag = document.createElement("div"); tag.className = "role-tag"; tag.textContent = role === "user" ? "you" : "agent"; if (role === "user") tag.style.alignSelf = "flex-end";
+      const tag = document.createElement("div"); tag.className = "role-tag"; tag.textContent = role === "user" ? t("role.you") : t("role.agent"); if (role === "user") tag.style.alignSelf = "flex-end";
       const bub = document.createElement("div"); bub.className = "bubble" + (opts.error ? " err-bubble" : "");
       if (role === "user") { bub.textContent = content; }
       else { bub.classList.add("content-host"); renderAssistant(bub, content, !!opts.streaming); if (opts.streaming) bub.classList.add("streaming"); }
@@ -1074,26 +1299,26 @@
     function setRunning(on) {
       state.running = on;
       $("status-dot").classList.toggle("running", on);
-      $("branch-label").textContent = on ? "running" : "idle";
+      $("branch-label").textContent = on ? t("status.running") : t("status.idle");
       $("btn-stop").disabled = !on;
       const send = $("btn-send"); send.classList.toggle("stop", on);
-      send.title = on ? "Stop" : "Send";
+      send.title = on ? t("btn.stop") : t("btn.send");
       send.innerHTML = on
         ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'
         : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19V5"/><path d="m6 11 6-6 6 6"/></svg>';
     }
 
     async function loadStatus() {
-      const s = await api("/api/status");
+      const s = await apiRetry("/api/status");
       state.configured = s.configured !== false;
       $("setup-banner").classList.toggle("show", !state.configured);
       $("setup-banner-bottom").classList.toggle("show", !state.configured);
       if (!state.configured) {
-        $("setup-banner-bottom").innerHTML = '⚠️ 未配置 LLM — 点击右上角"模型"按钮添加 API 配置。';
+        $("setup-banner-bottom").innerHTML = t("msg.not_configured");
       }
       state.llms = s.llms || []; state.llmNo = s.llm_no; state.llmName = s.llm_name || "—";
       $("llm-pill-label").textContent = state.llmName;
-      $("title").textContent = s.log ? "session · " + s.log.replace("model_responses_", "") : "New thread";
+      $("title").textContent = s.log ? t("msg.session") + s.log.replace("model_responses_", "") : t("title.new_thread");
       setRunning(!!s.running);
       renderLlmMenu();
     }
@@ -1108,7 +1333,13 @@ function closeGenPanel(id) {
 }
 function loadGenModels() {
   const token = CyberCodeAuth.getToken();
-  if (!token) return;
+  if (!token) {
+    const imgSel = document.getElementById("img-model");
+    const vidSel = document.getElementById("vid-model");
+    if (imgSel) imgSel.innerHTML = '<option value="">' + t("msg.need_login") + '</option>';
+    if (vidSel) vidSel.innerHTML = '<option value="">' + t("msg.need_login") + '</option>';
+    return;
+  }
   fetch("/proxy/v1/models", { headers: { Authorization: "Bearer " + token } })
     .then(r => r.json())
     .then(data => {
@@ -1124,9 +1355,14 @@ function loadGenModels() {
 }
 function generateImage() {
   const token = CyberCodeAuth.getToken();
-  if (!token) { alert("Please login first"); return; }
+  if (!token) {
+    const st = document.getElementById("img-status");
+    if (st) st.innerHTML = '<div style="color:#f59e0b;padding:8px">' + t("msg.login_img_guidance") + '</div>';
+    showLogin();
+    return;
+  }
   const prompt = document.getElementById("img-prompt").value.trim();
-  if (!prompt) { alert("Please enter a prompt"); return; }
+  if (!prompt) { alert(t("msg.enter_prompt")); return; }
   const model = document.getElementById("img-model").value || "dall-e-3";
   const size = document.getElementById("img-size").value;
   const quality = document.getElementById("img-quality").value;
@@ -1135,7 +1371,7 @@ function generateImage() {
   const resultsEl = document.getElementById("img-results");
   const btn = document.getElementById("img-generate");
   btn.disabled = true;
-  statusEl.textContent = "Generating...";
+  statusEl.textContent = t("msg.generating");
   resultsEl.innerHTML = "";
   fetch("/proxy/api/creation-tasks/image-generations", {
     method: "POST",
@@ -1145,8 +1381,8 @@ function generateImage() {
     .then(r => r.json())
     .then(data => {
       btn.disabled = false;
-      if (data.error) { statusEl.textContent = "Error: " + (data.error.message || data.error); return; }
-      statusEl.textContent = "Done!";
+      if (data.error) { statusEl.textContent = t("msg.error") + sanitizeClientError(data.error.message || data.error); return; }
+      statusEl.textContent = t("msg.done");
       const images = data.data || [];
       resultsEl.innerHTML = images.map(img => {
         if (img.url) return '<img src="' + esc(img.url.replace(/^https?:\/\/[^/]+/, "")) + '" onclick="window.open(this.src)" />';
@@ -1154,13 +1390,18 @@ function generateImage() {
         return "";
       }).join("");
     })
-    .catch(e => { btn.disabled = false; statusEl.textContent = "Error: " + e.message; });
+    .catch(e => { btn.disabled = false; statusEl.textContent = t("msg.error") + sanitizeClientError(e.message); });
 }
 function generateVideo() {
   const token = CyberCodeAuth.getToken();
-  if (!token) { alert("Please login first"); return; }
+  if (!token) {
+    const st = document.getElementById("vid-status");
+    if (st) st.innerHTML = '<div style="color:#f59e0b;padding:8px">' + t("msg.login_vid_guidance") + '</div>';
+    showLogin();
+    return;
+  }
   const prompt = document.getElementById("vid-prompt").value.trim();
-  if (!prompt) { alert("Please enter a prompt"); return; }
+  if (!prompt) { alert(t("msg.enter_prompt")); return; }
   const model = document.getElementById("vid-model").value || "auto";
   const duration = parseInt(document.getElementById("vid-duration").value);
   const ratio = document.getElementById("vid-ratio").value;
@@ -1169,7 +1410,7 @@ function generateVideo() {
   const resultsEl = document.getElementById("vid-results");
   const btn = document.getElementById("vid-generate");
   btn.disabled = true;
-  statusEl.textContent = "Submitting video generation task...";
+  statusEl.textContent = t("msg.submitting_video");
   resultsEl.innerHTML = "";
   fetch("/proxy/api/creation-tasks/chat-completions", {
     method: "POST",
@@ -1179,13 +1420,13 @@ function generateVideo() {
     .then(r => r.json())
     .then(data => {
       btn.disabled = false;
-      if (data.error) { statusEl.textContent = "Error: " + (data.error.message || data.error); return; }
+      if (data.error) { statusEl.textContent = t("msg.error") + sanitizeClientError(data.error.message || data.error); return; }
       const taskId = data.id || data.task_id || (data.data && data.data.id) || data.client_task_id;
       if (taskId) {
-        statusEl.textContent = "Task submitted! ID: " + taskId + ". Polling for results...";
+        statusEl.textContent = t("msg.task_submitted") + taskId + t("msg.polling");
         pollVideoTask(taskId, statusEl, resultsEl);
       } else if (data.choices && data.choices[0]) {
-        statusEl.textContent = "Done!";
+        statusEl.textContent = t("msg.done");
         const content = data.choices[0].message?.content || "";
         const videoMatch = content.match(/https?:\/\/[^\s"]+\.mp4/) || content.match(/https?:\/\/[^\s"]+ltx_video[^\s"]*/);
         if (videoMatch) {
@@ -1197,7 +1438,7 @@ function generateVideo() {
         statusEl.textContent = "Done! " + JSON.stringify(data).substring(0, 200);
       }
     })
-    .catch(e => { btn.disabled = false; statusEl.textContent = "Error: " + e.message; });
+    .catch(e => { btn.disabled = false; statusEl.textContent = t("msg.error") + sanitizeClientError(e.message); });
 }
 function pollVideoTask(taskId, statusEl, resultsEl) {
   const token = CyberCodeAuth.getToken();
@@ -1214,7 +1455,7 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
         statusEl.textContent = "Status: " + status + " (" + attempts + "/" + maxAttempts + ")";
         if (status === "completed" || status === "succeeded" || status === "done") {
           clearInterval(interval);
-          statusEl.textContent = "Done!";
+          statusEl.textContent = "完成！";
           const result = task.result || task.output || task.data || task;
           let videoUrl = result.video_url || result.url;
           if (!videoUrl && result.choices && result.choices[0]) {
@@ -1256,31 +1497,32 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
       state.llms.forEach(l => {
         const it = document.createElement("div");
         it.className = "item" + (l.idx === state.llmNo ? " active" : "");
-        const remarkHtml = l.remark ? '<span class="remark-text">· ' + esc(l.remark) + '</span>' : '';
-        it.innerHTML = '<span class="check">✓</span><span>' + esc(l.name) + remarkHtml + '</span><span class="llm-edit-btn" title="编辑">✎</span>';
+        it.innerHTML = '<span class="check">✓</span><span>' + esc(l.name) + '</span><span class="llm-edit-btn" title="' + t('btn.edit') + '">✎</span>';
         it.onclick = async (e) => {
           if (e.target.classList.contains("llm-edit-btn")) { e.stopPropagation(); menu.classList.remove("open"); openLlmModal(l.idx); return; }
           e.stopPropagation(); menu.classList.remove("open"); await switchLlm(l.idx);
         };
         menu.appendChild(it);
       });
-      // l0veyou models section
-      if (state.l0veyouModels && state.l0veyouModels.length) {
+      // Models section (read-only, no edit/key view)
+      if (state.cloudModels && state.cloudModels.length) {
         const lsep = document.createElement("div");
         lsep.className = "hint";
-        lsep.textContent = "Models";
+        lsep.textContent = "Models · " + t("msg.readonly");
         menu.appendChild(lsep);
-        state.l0veyouModels.forEach(m => {
+        state.cloudModels.forEach(m => {
           const lit = document.createElement("div");
-          lit.className = "item";
-          lit.innerHTML = '<span class="dot" style="width:7px;height:7px;border-radius:50%;background:#2997ff;flex:0 0 auto"></span><span>' + esc(m.id) + '</span>';
+          lit.className = "item cloud-model";
+          lit.innerHTML = '<span class="dot" style="width:7px;height:7px;border-radius:50%;background:#2997ff;flex:0 0 auto"></span><span>' + esc(m.id) + '</span><span style="margin-left:auto;font-size:11px;opacity:.4" title="' + t('msg.protected') + '">🔒</span>';
           lit.onclick = () => {
             CyberCodeAuth.configureLLM(m.id).then(() => {
               loadStatus();
               closeLlmMenu();
-              toast("Model: " + m.id);
+              toast(t("msg.model_set") + m.id);
             });
           };
+          // Block right-click and edit attempts
+          lit.oncontextmenu = (e) => { e.preventDefault(); toast(t("msg.protected")); };
           menu.appendChild(lit);
         });
       }
@@ -1303,10 +1545,17 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
       const titleEl = $("llm-modal-title");
       const delBtn = $("llm-btn-delete");
       if (idx >= 0) {
+        // Check if this is a cloud (l0veyou-scanned) model - block editing
+        const llm = state.llms.find(l => l.idx === idx);
+        if (llm && llm.isCloud) {
+          toast(t("msg.protected"));
+          return;
+        }
         titleEl.textContent = "Edit Model";
         delBtn.style.display = "";
         api("/api/llm/get?idx=" + idx).then(r => {
-          if (r.error) { toast("Load failed: " + r.error); return; }
+          if (r.error) { toast(t("msg.protected")); return; }
+          if (r.protected) { toast(t("msg.protected")); return; }
           const c = r.cfg || {};
           $("llm-fld-name").value = c.name || "";
           $("llm-fld-model").value = c.model || "";
@@ -1337,49 +1586,50 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
         apikey: $("llm-fld-apikey").value.trim(),
         remark: $("llm-fld-remark").value.trim(),
       };
-      if (!cfg.name) { toast("请填写显示名称"); $("llm-fld-name").focus(); return; }
-      if (!cfg.apibase) { toast("请填写 API 地址"); $("llm-fld-apibase").focus(); return; }
-      if (!cfg.apikey) { toast("请填写 API 密钥"); $("llm-fld-apikey").focus(); return; }
+      if (!cfg.name) { toast(t("msg.enter_name")); $("llm-fld-name").focus(); return; }
+      if (!cfg.apibase) { toast(t("msg.enter_api_base")); $("llm-fld-apibase").focus(); return; }
+      if (!cfg.apikey) { toast(t("msg.enter_api_key")); $("llm-fld-apikey").focus(); return; }
       if (!cfg.model) cfg.model = cfg.name;
 
       const isEdit = editingLlmIdx >= 0;
       const path = isEdit ? "/api/llm/update" : "/api/llm/add";
       const body = isEdit ? Object.assign({ idx: editingLlmIdx }, cfg) : cfg;
       const r = await api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (r.error) { toast("Save failed: " + r.error); return; }
+      if (r.error) { toast(t("msg.save_failed") + sanitizeClientError(r.error)); return; }
       state.llms = r.llms || state.llms;
       state.llmNo = r.llm_no;
       state.llmName = r.llm_name;
       $("llm-pill-label").textContent = state.llmName;
       renderLlmMenu();
       closeLlmModal();
-      toast(isEdit ? "Model updated" : "Model added");
+      toast(isEdit ? t("msg.model_updated") : t("msg.model_added"));
     }
 
     async function deleteLlm() {
       if (editingLlmIdx < 0) return;
-      if (!confirm("确定删除此模型配置？此操作不可撤销。")) return;
+      if (!confirm(t("msg.confirm_delete"))) return;
       const r = await api("/api/llm/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idx: editingLlmIdx }) });
-      if (r.error) { toast("Delete failed: " + r.error); return; }
+      if (r.error) { toast(t("msg.delete_failed") + sanitizeClientError(r.error)); return; }
       state.llms = r.llms || state.llms;
       state.llmNo = r.llm_no;
       state.llmName = r.llm_name;
       $("llm-pill-label").textContent = state.llmName;
       renderLlmMenu();
       closeLlmModal();
-      toast("Model deleted");
+      toast(t("msg.model_deleted"));
     }
 
     async function switchLlm(idx) {
       const r = await api("/api/llm", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ idx }) });
-      if (r.error) { toast("LLM switch failed: " + r.error); return; }
+      if (r.error) { toast(t("msg.switch_failed") + sanitizeClientError(r.error)); return; }
       state.llmNo = r.llm_no; state.llmName = r.llm_name; state.llms = r.llms || state.llms;
-      $("llm-pill-label").textContent = state.llmName; renderLlmMenu(); toast("LLM → " + state.llmName);
+      $("llm-pill-label").textContent = state.llmName; renderLlmMenu(); toast(t("msg.llm_switched") + state.llmName);
     }
 
     async function loadSessions() {
-      const r = await api("/api/sessions"); const list = $("session-list");
-      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">No sessions yet</div>'; return; }
+      const r = await apiRetry("/api/sessions"); const list = $("session-list");
+      if (r._retry_failed) { list.innerHTML = '<div style="color:#f59e0b;font-size:12.5px;padding:6px 8px">' + t("msg.retry_failed") + '</div>'; return; }
+      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">' + t("msg.no_sessions") + '</div>'; return; }
       list.innerHTML = "";
       r.items.slice(0, 30).forEach((s, i) => {
         const row = document.createElement("div"); row.className = "thread" + (s.current ? " active" : "");
@@ -1392,7 +1642,7 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
 
     async function loadSkills() {
       const r = await api("/api/skills"); const list = $("skill-list");
-      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">No skills yet</div>'; return; }
+      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">' + t("msg.no_skills") + '</div>'; return; }
       list.innerHTML = "";
       r.items.slice(0, 40).forEach(s => {
         const row = document.createElement("div"); row.className = "skill-row";
@@ -1404,7 +1654,7 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
     // ---------- video gallery ----------
     async function loadVideos() {
       const r = await api("/api/videos"); const list = $("video-list");
-      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">No renders yet</div>'; return; }
+      if (r.error || !r.items || !r.items.length) { list.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12.5px;padding:6px 8px">' + t("msg.no_videos") + '</div>'; return; }
       list.innerHTML = "";
       r.items.slice(0, 20).forEach(v => {
         const row = document.createElement("div"); row.className = "video-row";
@@ -1413,32 +1663,58 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
       });
     }
     function openVideo(v) {
-      $("video-player").src = "/api/video/" + encodeURIComponent(v.path);
+      const player = $("video-player");
+      const videoUrl = "/api/video/" + encodeURIComponent(v.path);
+      // Set up error handler for auth/load failures
+      player.onerror = function() {
+        console.error("Video load error, status:", player.error ? player.error.code : "unknown");
+        player.src = "";
+        $("video-cap").innerHTML = '<span style="color:#ef4444">' + t("msg.video_error") + '</span>';
+      };
+      // Use fetch+blob as fallback for auth issues
+      fetch(videoUrl, { credentials: "same-origin" })
+        .then(res => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          player.src = url;
+          player.onerror = null; // Clear error handler once loaded
+        })
+        .catch(e => {
+          console.error("Video fetch failed:", e);
+          $("video-cap").innerHTML = '<span style="color:#ef4444">' + t("msg.video_error") + '</span>';
+        });
       $("video-cap").textContent = v.name + "  ·  " + (v.size/1024/1024).toFixed(1) + " MB";
-      $("video-dl").href = "/api/video/" + encodeURIComponent(v.path);
+      $("video-dl").href = videoUrl;
       $("video-dl").download = v.name;
       $("video-modal").classList.add("open");
     }
-    $("video-close").onclick = () => { $("video-modal").classList.remove("open"); $("video-player").pause(); $("video-player").src=""; };
+    $("video-close").onclick = () => {
+      const p = $("video-player");
+      if (p.src && p.src.startsWith("blob:")) URL.revokeObjectURL(p.src);
+      $("video-modal").classList.remove("open"); p.pause(); p.src=""; p.onerror=null;
+    };
     $("video-modal").onclick = (e) => { if (e.target === $("video-modal")) $("video-close").click(); };
 
     // ---------- make video ----------
     function makeVideo() {
       const ta = $("input");
       ta.value = ""; autoGrow(ta);
-      ta.placeholder = "Describe the video you want — e.g. \"a 15s product launch video for my SaaS, 16:9, with captions\"";
+      ta.placeholder = t("msg.video_placeholder");
       ta.focus();
       state.videoMode = true;
-      toast("HyperFrames video mode — type your video idea and press Enter");
+      toast(t("msg.video_mode"));
     }
 
     // ---------- actions ----------
     async function send() {
       if (state.running) { await stop(); return; }
       const ta = $("input"); const text = ta.value.trim(); if (!text) return;
-      if (!state.configured) { toast('未配置 LLM — 点击「Model」按钮添加'); return; }
+      if (!state.configured) { toast(t('msg.not_configured_toast')); return; }
       const attach = $("attach-input").value.trim();
-      const full = attach ? text + "\n\n（参考文件：" + attach + "）" : text;
+      const full = attach ? text + "\n\n" + t("msg.ref_file") + attach + ")" : text;
       ta.value = ""; autoGrow(ta); $("attach-row").classList.remove("show"); $("attach-input").value = "";
       addBubble("user", full);
       const bub = addBubble("assistant", "", { streaming: true });
@@ -1456,17 +1732,17 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
 
       const isVideo = state.videoMode;
       state.videoMode = false;
-      ta.placeholder = "Ask anything  ·  ⏎ send  ·  ⇧⏎ newline";
+      ta.placeholder = t("input.placeholder");
 
       // /video <desc> slash command → set video mode for this turn
       const videoCmd = text.match(/^\/video(\s+([\s\S]+))?$/);
       const useVideo = isVideo || !!videoCmd;
       const sendText = videoCmd ? (videoCmd[2] || "").trim() : full;
-      if (videoCmd && !sendText) { toast("Usage: /video <description>"); setRunning(false); return; }
+      if (videoCmd && !sendText) { toast(t("msg.video_usage")); setRunning(false); return; }
 
       try {
-        const res = await fetch("/api/chat", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ text: sendText, video: useVideo }) });
-        if (res.status === 409) { const j = await res.json(); bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, j.error || "agent busy", false); setRunning(false); return; }
+        const res = await fetch("/api/chat", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ text: sendText, video: useVideo }), credentials: "same-origin" });
+        if (res.status === 409) { const j = await res.json(); bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, sanitizeClientError(j.error) || t("msg.agent_busy"), false); setRunning(false); return; }
         if (!res.ok || !res.body) { const t = await res.text(); bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, t || ("HTTP " + res.status), false); setRunning(false); return; }
         const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = ""; let live = "";
         while (true) {
@@ -1485,17 +1761,17 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
                 fbox.innerHTML = '<span style="font-size:11px;color:rgba(255,255,255,.4)">produced: </span>' + ev.files.map(p => { const b = p.split(/[\\/]/).pop(); return `<span class="file-ref" data-path="${esc(p)}" title="${esc(p)}">📄 ${esc(b)}</span>`; }).join(" ");
                 bub.appendChild(fbox);
               }
-            } else if (ev.type === "error") { bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, ev.message || "error", false); }
+            } else if (ev.type === "error") { bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, sanitizeClientError(ev.message || "error"), false); }
           }
         }
-      } catch (e) { bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, "network: " + e.message, false); }
+      } catch (e) { bub.classList.remove("streaming"); bub.classList.add("err-bubble"); renderAssistant(bub, sanitizeClientError("network: " + e.message), false); }
       setRunning(false); loadStatus(); loadSessions(); loadVideos();
     }
 
-    async function stop() { await api("/api/stop", { method: "POST" }); toast("stop signal sent"); setRunning(false); }
+    async function stop() { await api("/api/stop", { method: "POST" }); toast(t("msg.stop_signal")); setRunning(false); }
     async function newThread() {
       const r = await api("/api/new", { method: "POST" });
-      $("stream").innerHTML = ""; $("empty").style.display = ""; $("title").textContent = "New thread";
+      $("stream").innerHTML = ""; $("empty").style.display = ""; $("title").textContent = t("title.new_thread");
       toast(r.message || "new conversation"); loadStatus(); loadSessions();
     }
     async function continueSession(idx, sess) {
@@ -1507,7 +1783,7 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
         const m = await api("/api/messages?path=" + encodeURIComponent(r.path));
         (m.items || []).forEach(it => addBubble(it.role, it.content || ""));
       } else { addBubble("assistant", r.message || "restored", {}); }
-      $("title").textContent = "session · " + (sess.name || "").replace("model_responses_", "");
+      $("title").textContent = "会话 · " + (sess.name || "").replace("model_responses_", "");
       toast(r.message || "session restored"); loadStatus(); loadSessions();
     }
 
@@ -1574,17 +1850,30 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
     $("project-fld-path").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveProject(); } });
 
     // ---- 设置弹窗 ----
-    function openSettingsModal() {
+    async function openSettingsModal() {
       $("settings-modal").classList.add("open");
+      // Load current system prompt
+      try {
+        const r = await fetch("/api/system-prompt");
+        const data = await r.json();
+        $("settings-system-prompt").value = data.custom || "";
+      } catch(e) { console.error(e); }
       setTimeout(() => $("settings-theme").focus(), 100);
     }
     function closeSettingsModal() { $("settings-modal").classList.remove("open"); }
-    function saveSettings() {
-      // UI 占位，后端后续实现
+    async function saveSettings() {
       const theme = $("settings-theme").value;
       const loops = $("settings-max-loops").value;
+      const sp = $("settings-system-prompt").value;
+      try {
+        await fetch("/api/system-prompt", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({custom: sp})
+        });
+        toast(sp ? "系统提示词已更新" : "已恢复默认系统提示词");
+      } catch(e) { console.error(e); }
       closeSettingsModal();
-      toast("设置已保存（UI 占位，后端待实现）— 主题:" + (theme === "dark" ? "暗色" : "亮色") + " · 最大循环:" + loops);
     }
     $("btn-settings").onclick = openSettingsModal;
     $("settings-modal-close").onclick = closeSettingsModal;
@@ -1609,29 +1898,51 @@ function pollVideoTask(taskId, statusEl, resultsEl) {
 
     document.addEventListener("click", e => {
       const fr = e.target.closest(".file-ref");
-      if (fr) { navigator.clipboard && navigator.clipboard.writeText(fr.dataset.path); toast("copied path: " + fr.dataset.path); }
+      if (fr) { navigator.clipboard && navigator.clipboard.writeText(fr.dataset.path); toast(t("msg.copied") + fr.dataset.path); }
     });
 
 document.getElementById("nav-image-gen").addEventListener("click", () => openGenPanel("image-panel"));
 document.getElementById("nav-video-gen").addEventListener("click", () => openGenPanel("video-panel"));
+
+    // Language toggle events
+    document.getElementById("lang-toggle").addEventListener("click", () => {
+      setLang(_lang === "en" ? "zh" : "en");
+    });
+    // Apply saved language on load
+    applyI18n();
 
     // boot
     (async () => {
       // Check for OAuth callback first
       const oauthHandled = await handleOAuthCallback();
 
-      // Initialize login UI
-      await initLoginUI();
+      // Initialize login UI (non-blocking)
+      initLoginUI().catch(e => console.warn("initLoginUI:", e));
 
       // Check auth status
       if (!oauthHandled) {
-        const session = await CyberCodeAuth.verify();
-        if (session) {
-          hideLogin();
-          await CyberCodeAuth.configureLLM("");
-          await loadL0veyouModels();
-        } else {
-          showLogin();
+        try {
+          const session = await CyberCodeAuth.verify();
+          if (session) {
+            hideLogin();
+            await CyberCodeAuth.configureLLM("");
+            await loadCloudModels();
+          } else {
+            // FIX: Don't force login if server already has LLM configured
+            const s = await api("/api/status");
+            if (s.configured) {
+              hideLogin(); // Server is configured
+            } else {
+              showLogin(); // Server not configured
+            }
+          }
+        } catch(e) {
+          // FIX: If auth check fails, try server status
+          try {
+            const s = await api("/api/status");
+            if (s.configured) { hideLogin(); }
+            else { showLogin(); }
+          } catch(e2) { showLogin(); }
         }
       }
 

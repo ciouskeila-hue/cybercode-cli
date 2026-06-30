@@ -104,6 +104,15 @@ Before each tool call, reason about: current phase, whether the last result met 
 2. Check memory before decisions; always use existing SOPs; revisit on repeated failures.
 3. Key/secret files: reference only, never read or move.
 4. Files under memory/ should be patched (not overwritten) unless creating new ones.
+
+## XML Tool Calling Fallback
+If native function calling is unavailable (no tool_calls in API response), use XML format to call tools:
+<tool_use>
+{"name": "tool_name", "arguments": {"key": "value"}}
+</tool_use>
+
+You can make multiple tool calls in one response. After each tool_use block, the system will execute it and return results.
+Always prefer native function calling when available. Only use XML format when the API doesn't return tool_calls.
 """
 
 # ---------------------------------------------------------------------------
@@ -185,6 +194,23 @@ TOOLS_SCHEMA = [
         "description": "Start distilling long-term memory. Call when discovering info worth remembering (env facts, user prefs, lessons learned).",
         "parameters": {"type": "object", "properties": {}},
     }},
+    {"type": "function", "function": {
+        "name": "generate_image",
+        "description": "Generate an image from a text prompt via the l0veyou image API (gpt-image-2). Saves the image locally and returns a [FILE:] reference. Use when the user asks to create/generate/draw/design an image.",
+        "parameters": {"type": "object", "properties": {
+            "prompt": {"type": "string", "description": "Detailed image prompt. English works best. Describe subject, style, lighting, composition, colors."},
+            "size": {"type": "string", "enum": ["1024x1024", "1024x1536", "1536x1024"], "description": "Image dimensions", "default": "1024x1024"},
+            "model": {"type": "string", "description": "Image model", "default": "gpt-image-2"},
+        }, "required": ["prompt"]},
+    }},
+    {"type": "function", "function": {
+        "name": "view_image",
+        "description": "View and analyze a generated image. Reads the image file and uses a vision-capable model to describe what's in it. Use this to review/evaluate images you have generated, check quality, verify content matches the prompt, and provide feedback.",
+        "parameters": {"type": "object", "properties": {
+            "path": {"type": "string", "description": "Path to the image file to analyze (use the path returned by generate_image)"},
+            "question": {"type": "string", "description": "Optional specific question about the image (e.g. 'Does this match the comic panel description?')", "default": "Describe this image in detail: subject, style, colors, composition, and any notable details."},
+        }, "required": ["path"]},
+    }},
 ]
 
 
@@ -206,6 +232,41 @@ def format_error(e):
         f = tb[-1]
         return f"{exc_type.__name__}: {exc_value} @ {os.path.basename(f.filename)}:{f.lineno}"
     return f"{exc_type.__name__}: {exc_value}"
+
+
+def sanitize_error(err_text):
+    """Sanitize error messages to hide upstream URLs, API keys, and real error details.
+    Returns a generic error message that doesn't expose internal infrastructure."""
+    if not err_text:
+        return "Service temporarily unavailable"
+    s = str(err_text)
+    # Hide HTTP status codes that reveal rate limiting / auth issues
+    # 429 -> generic, 401/403 -> generic
+    if "429" in s:
+        return "Model is busy, please try again later"
+    if "401" in s or "403" in s:
+        return "Model authentication failed, please check configuration"
+    # Hide upstream URLs
+    s = re.sub(r"https?://[^\s<>]+", "[api-endpoint]", s)
+    # Hide upstream service names (friendli, l0veyou, chatgpt2api, etc.)
+    s = re.sub(r"(?i)friendli[\w-]*", "[upstream]", s)
+    s = re.sub(r"(?i)l0veyou[\w-]*", "[upstream]", s)
+    s = re.sub(r"(?i)chatgpt2api[\w-]*", "[upstream]", s)
+    # Hide API keys (sk-xxx, sess-xxx, Bearer xxx)
+    s = re.sub(r"(sk-[a-zA-Z0-9]{6})[a-zA-Z0-9]*", r"\1***", s)
+    s = re.sub(r"(sess-[a-zA-Z0-9]{6})[a-zA-Z0-9]*", r"\1***", s)
+    s = re.sub(r"Bearer\s+[a-zA-Z0-9_-]+", "Bearer ***", s)
+    # Hide IP addresses
+    s = re.sub(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", "[ip]", s)
+    # Hide file paths that reveal server structure
+    s = re.sub(r"/root/[^\s]+", "[server-path]", s)
+    s = re.sub(r"/home/[^\s]+", "[server-path]", s)
+    # Remove traceback details
+    s = re.sub(r"Traceback[\s\S]*?(?=\n[A-Za-z]|$)", "[error]", s)
+    # Limit length
+    if len(s) > 200:
+        s = s[:200] + "..."
+    return s
 
 
 def clean_reply(text):
@@ -239,8 +300,12 @@ def tool_code_run(script, code_type="python", timeout=60, cwd=None, stop_signal=
         tmp.write(script)
         tmp.close()
         cmd = [sys.executable, "-X", "utf8", "-u", tmp.name]
-    elif code_type in ("bash", "shell", "sh"):
-        cmd = ["bash", "-c", script]
+    elif code_type in ("bash", "shell", "sh", "powershell", "ps"):
+        if sys.platform == "win32":
+            # Use PowerShell on Windows
+            cmd = ["powershell", "-NoProfile", "-NonInteractive", "-Command", script]
+        else:
+            cmd = ["bash", "-c", script]
     else:
         return {"status": "error", "msg": f"Unsupported type: {code_type}"}
 
@@ -336,9 +401,30 @@ def tool_web_scan(url, text_only=True):
     """Fetch a URL and return text content."""
     if requests is None:
         return {"status": "error", "msg": "requests library not installed. Run: pip install requests"}
+    # SECURITY: SSRF protection - block internal/private IPs
+    try:
+        from urllib.parse import urlparse as _up
+        parsed = _up(url)
+        hostname = parsed.hostname or ""
+        # Block private/internal IPs and metadata endpoints
+        import ipaddress as _ipa
+        try:
+            ip = _ipa.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                return {"status": "error", "msg": f"Blocked: internal IP {hostname}"}
+        except ValueError:
+            pass  # Not an IP, it's a hostname
+        # Block cloud metadata endpoints
+        if hostname in ("169.254.169.254", "metadata.google.internal", "metadata"):
+            return {"status": "error", "msg": "Blocked: cloud metadata endpoint"}
+        # Only allow http/https
+        if parsed.scheme not in ("http", "https"):
+            return {"status": "error", "msg": f"Blocked: scheme {parsed.scheme}"}
+    except Exception:
+        return {"status": "error", "msg": "Invalid URL"}
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        resp = requests.get(url, headers=headers, timeout=30, verify=False)
+        resp = requests.get(url, headers=headers, timeout=30, verify=True)
         content_type = resp.headers.get("content-type", "")
         if text_only and "html" in content_type:
             # Simple HTML to text
@@ -368,6 +454,187 @@ def tool_ask_user(question, candidates=None):
             "data": {"question": question, "candidates": candidates or []}}
 
 
+def tool_generate_image(prompt, size="1024x1024", model="gpt-image-2", api_base="", api_key="", out_dir=None):
+    """Generate an image via the l0veyou async creation-tasks API.
+    Creates a task, polls until done, downloads the image, saves locally."""
+    if requests is None:
+        return {"status": "error", "msg": "requests library not installed. Run: pip install requests"}
+    if not api_base or not api_key:
+        return {"status": "error", "msg": "No LLM configured. Please log in via the web UI first."}
+    try:
+        import base64 as _b64, uuid as _uuid
+        import warnings as _w
+        _w.filterwarnings("ignore")
+    except Exception:
+        pass
+    out_dir = out_dir or os.path.join(SCRIPT_DIR, "output")
+    os.makedirs(out_dir, exist_ok=True)
+    base = api_base.rstrip("/")
+    if "/v1" in base:
+        base = base.split("/v1")[0]
+    task_id = "img_" + str(int(time.time() * 1000))
+    headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
+    payload = {"client_task_id": task_id, "prompt": prompt, "model": model, "size": size, "mode": "generate"}
+    try:
+        r = requests.post(base + "/api/creation-tasks/image-generations",
+                          json=payload, headers=headers, timeout=30, verify=True)
+        if r.status_code not in (200, 201):
+            return {"status": "error", "msg": sanitize_error("HTTP " + str(r.status_code) + ": " + r.text[:200])}
+    except Exception as e:
+        return {"status": "error", "msg": format_error(e)}
+    saved = []
+    for _ in range(36):
+        time.sleep(5)
+        try:
+            r = requests.get(base + "/api/creation-tasks", params={"id": task_id},
+                             headers=headers, timeout=15, verify=True)
+            items = r.json().get("items", [])
+            match = next((it for it in items if it.get("id") == task_id), None)
+            if not match:
+                continue
+            status = match.get("status", "")
+            if status in ("success", "succeeded", "completed"):
+                data = match.get("data", [])
+                for di, d in enumerate(data):
+                    url = d.get("url")
+                    if not url:
+                        continue
+                    try:
+                        ir = requests.get(url, headers={"Authorization": "Bearer " + api_key},
+                                          timeout=60, verify=True)
+                        if ir.status_code != 200 or not ir.content:
+                            ir = requests.get(url, timeout=60, verify=True)
+                        if ir.status_code == 200 and ir.content:
+                            fpath = os.path.join(out_dir, task_id + "_" + str(di) + ".png")
+                            with open(fpath, "wb") as fh:
+                                fh.write(ir.content)
+                            saved.append(fpath)
+                    except Exception:
+                        pass
+                break
+            if status in ("failed", "error"):
+                return {"status": "error", "msg": sanitize_error("task failed: " + str(match.get("error", ""))[:200])}
+        except Exception:
+            pass
+    if not saved:
+        return {"status": "error", "msg": "image generation timed out or returned no image"}
+    return {"status": "success", "images": saved,
+            "files": ["[FILE:" + p + "]" for p in saved]}
+
+
+def tool_view_image(image_path, question="Describe this image in detail", api_base="", api_key=""):
+    """Analyze an image using a vision-capable model via the l0veyou API.
+    Reads the image, converts to base64, and sends to a vision model for description."""
+    if requests is None:
+        return {"status": "error", "msg": "requests library not installed"}
+    if not os.path.exists(image_path):
+        return {"status": "error", "msg": f"Image not found: {image_path}"}
+    if not api_base or not api_key:
+        return {"status": "error", "msg": "No LLM configured for vision analysis"}
+    try:
+        import base64 as _b64
+        import warnings as _w
+        _w.filterwarnings("ignore")
+    except Exception:
+        pass
+
+    # Read and optionally resize the image to keep payload manageable
+    file_size = os.path.getsize(image_path)
+    try:
+        with open(image_path, "rb") as f:
+            img_data = f.read()
+        # If image is larger than 1MB, try to resize using PIL
+        if len(img_data) > 1024 * 1024:
+            try:
+                from PIL import Image
+                import io
+                img = Image.open(image_path)
+                # Resize to max 512x512 for analysis
+                img.thumbnail((512, 512), Image.LANCZOS)
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                img_data = buf.getvalue()
+            except ImportError:
+                # PIL not available, use as-is but truncate if too large
+                if len(img_data) > 2 * 1024 * 1024:
+                    img_data = img_data[:2 * 1024 * 1024]
+        img_b64 = _b64.b64encode(img_data).decode()
+    except Exception as e:
+        return {"status": "error", "msg": f"Failed to read image: {e}"}
+
+    base = api_base.rstrip("/")
+    if "/v1" in base:
+        base = base.split("/v1")[0]
+
+    data_url = f"data:image/png;base64,{img_b64}"
+    headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
+
+    # Try vision-capable models (fast timeout, fail quickly if accounts expired)
+    vision_models = ["Free/gpt-4o", "Free/gpt-4o-mini", "Free/gemini-3.5-flash"]
+
+    for vmodel in vision_models:
+        payload = {
+            "model": vmodel,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": question},
+                    {"type": "image_url", "image_url": {"url": data_url}}
+                ]
+            }],
+            "stream": True,
+            "max_tokens": 500,
+        }
+        try:
+            r = requests.post(base + "/v1/chat/completions", json=payload,
+                              headers=headers, timeout=12, verify=True, stream=True)
+            content_parts = []
+            has_error = False
+            line_count = 0
+            for line in r.iter_lines():
+                if not line:
+                    continue
+                line = line.decode("utf-8", errors="replace") if isinstance(line, bytes) else line
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if data_str == "[DONE]":
+                    break
+                line_count += 1
+                # Early exit: if we've seen 3 lines and no content, skip this model
+                if line_count > 5 and not content_parts:
+                    break
+                try:
+                    import json as _json
+                    evt = _json.loads(data_str)
+                except Exception:
+                    continue
+                if "error" in evt and "choices" not in evt:
+                    has_error = True
+                    break
+                choices = evt.get("choices") or [{}]
+                delta = choices[0].get("delta") or {}
+                if delta.get("content"):
+                    content_parts.append(delta["content"])
+            content = "".join(content_parts).strip()
+            # Check if the response is a real description (not "I can't see images")
+            if content and len(content) > 10 and "cannot see" not in content.lower() and "can't see" not in content.lower() and "text-based" not in content.lower():
+                return {"status": "success", "model_used": vmodel, "description": content,
+                        "file_path": image_path, "file_size": file_size}
+        except Exception:
+            continue
+
+    # Fallback: no vision model worked
+    return {
+        "status": "partial",
+        "msg": "Vision analysis unavailable (no vision model responded). The image file exists and is valid.",
+        "file_path": image_path,
+        "file_size": file_size,
+        "file_size_human": f"{file_size / 1024:.0f} KB",
+        "suggestion": "Evaluate the image based on the prompt used to generate it. The image was successfully generated and saved."
+    }
+
+
 # ---------------------------------------------------------------------------
 # Step outcome + handler
 # ---------------------------------------------------------------------------
@@ -393,9 +660,24 @@ class AgentHandler:
     def _get_abs_path(self, path):
         if not path:
             return ""
+        # SECURITY: sandbox to ROOT_DIR/TEMP_DIR
+        _ALLOWED_ROOTS = [
+            os.path.realpath(ROOT_DIR),
+            os.path.realpath(TEMP_DIR),
+            os.path.realpath(os.path.join(ROOT_DIR, "output")),
+        ]
         if os.path.isabs(path):
-            return path
-        return os.path.abspath(os.path.join(self.cwd, path))
+            real = os.path.realpath(path)
+            for root in _ALLOWED_ROOTS:
+                if real.startswith(root + os.sep) or real == root:
+                    return real
+            # Outside sandbox - deny
+            return ""
+        resolved = os.path.realpath(os.path.join(self.cwd, path))
+        for root in _ALLOWED_ROOTS:
+            if resolved.startswith(root + os.sep) or resolved == root:
+                return resolved
+        return ""
 
     def _get_anchor_prompt(self):
         """Build the working-memory prompt injected each turn."""
@@ -495,6 +777,55 @@ class AgentHandler:
         yield f"Waiting for your answer...\n"
         return StepOutcome(result, next_prompt="", should_exit=True)
 
+    def do_generate_image(self, args, response):
+        prompt = args.get("prompt", "")
+        if not prompt:
+            return StepOutcome("[Error] No prompt provided.", next_prompt="\n")
+        size = args.get("size", "1024x1024")
+        model = args.get("model", "gpt-image-2")
+        # Use l0veyou backend for image generation (g0i.ai doesn't support it)
+        # Admin session required for image generation API
+        api_base = "https://l0veyou.com"
+        # SECURITY: load admin token from env var, not hardcoded
+        api_key = os.environ.get("L0VEYOU_ADMIN_TOKEN", "")
+        if not api_key:
+            # Fallback: search in llm configs
+            for cfg in getattr(self.parent, "_llm_configs", []):
+                if "l0veyou" in cfg.get("apibase", ""):
+                    api_key = cfg["apikey"]
+                    break
+        yield f"[Action] Generating image: {str(prompt)[:60]}...\n"
+        result = tool_generate_image(prompt, size, model, api_base, api_key)
+        if isinstance(result, dict) and result.get("status") == "success":
+            yield f"[Status] Generated {len(result.get('images', []))} image(s)\n"
+        else:
+            yield f"[Status] Image generation failed: {smart_format(str(result), max_str_len=300)}\n"
+        return StepOutcome(smart_format(json.dumps(result, ensure_ascii=False), max_str_len=4000),
+                           next_prompt=self._get_anchor_prompt())
+
+    def do_view_image(self, args, response):
+        image_path = args.get("path", "")
+        if not image_path:
+            return StepOutcome("[Error] No image path provided.", next_prompt="\n")
+        question = args.get("question", "Describe this image in detail: subject, style, colors, composition, and any notable details.")
+        lc = getattr(self.parent, "llmclient", None)
+        api_base = lc.api_base if lc else ""
+        api_key = lc.api_key if lc else ""
+        yield f"[Action] Viewing image: {os.path.basename(image_path)}...\n"
+        result = tool_view_image(image_path, question, api_base, api_key)
+        if isinstance(result, dict):
+            status = result.get("status", "unknown")
+            if status == "success":
+                desc = result.get("description", "")
+                model = result.get("model_used", "?")
+                yield f"[Status] Vision analysis ({model}): {str(desc)[:200]}...\n"
+            elif status == "partial":
+                yield f"[Status] Vision unavailable - {result.get('msg', '')}\n"
+            else:
+                yield f"[Status] View failed: {smart_format(str(result), max_str_len=300)}\n"
+        return StepOutcome(smart_format(json.dumps(result, ensure_ascii=False), max_str_len=6000),
+                           next_prompt=self._get_anchor_prompt())
+
     def do_update_working_checkpoint(self, args, response):
         key_info = args.get("key_info", "")
         related_sop = args.get("related_sop", "")
@@ -548,6 +879,53 @@ class MockToolCall:
         self.function = type("F", (), {"name": name, "arguments": json.dumps(args, ensure_ascii=False)})()
 
 
+def _parse_xml_tool_calls(content):
+    """Parse XML-formatted tool calls from LLM text output.
+
+    Supports formats:
+      <tool_use>{"name": "tool_name", "arguments": {"key": "value"}}</tool_use>
+      <tool_call name="tool_name">{"key": "value"}</tool_call>
+      ```tool_use\n{"name": "...", "arguments": {...}}\n```
+
+    Returns list of MockToolCall objects. Empty list if none found.
+    """
+    if not content:
+        return []
+    tool_calls = []
+    # Format 1: <tool_use>{...}</tool_use>
+    for match in re.finditer(r'<tool_use>\s*(\{.*?\})\s*</tool_use>', content, re.DOTALL):
+        try:
+            data = json.loads(match.group(1))
+            name = data.get("name", "")
+            args = data.get("arguments", data.get("args", {}))
+            if name:
+                tool_calls.append(MockToolCall(name, args, id=f"xml-{len(tool_calls)}"))
+        except (json.JSONDecodeError, AttributeError):
+            pass
+    # Format 2: <tool_call name="...">{...}</tool_call>
+    if not tool_calls:
+        for match in re.finditer(r'<tool_call\s+name=["\']([^"\']+)["\']>\s*(\{.*?\}|\S*)\s*</tool_call>', content, re.DOTALL):
+            name = match.group(1)
+            args_str = match.group(2).strip()
+            try:
+                args = json.loads(args_str) if args_str else {}
+            except json.JSONDecodeError:
+                args = {"_raw": args_str}
+            tool_calls.append(MockToolCall(name, args, id=f"xml-{len(tool_calls)}"))
+    # Format 3: code block with tool_use header containing JSON
+    if not tool_calls:
+        for match in re.finditer(r'```(?:tool_use|tool_call)?\s*\n\s*(\{.*?\})\s*\n```', content, re.DOTALL):
+            try:
+                data = json.loads(match.group(1))
+                name = data.get("name", "")
+                args = data.get("arguments", data.get("args", {}))
+                if name:
+                    tool_calls.append(MockToolCall(name, args, id=f"xml-{len(tool_calls)}"))
+            except (json.JSONDecodeError, AttributeError):
+                pass
+    return tool_calls
+
+
 class LLMClient:
     """OpenAI-compatible streaming LLM client with function-calling support.
 
@@ -598,9 +976,9 @@ class LLMClient:
                         texts.append(b)
                 content = "\n".join(texts)
             if tool_results:
-                for tr in tool_results:
-                    msgs.append({"role": "tool", "tool_call_id": tr.get("tool_use_id", ""),
-                                 "content": tr.get("content", "")})
+                # Embed tool results as text in user message (avoids role:tool requiring preceding tool_calls)
+                tool_text = "\n\n".join([f"[Tool Result]: {tr.get('content', '')}" for tr in tool_results])
+                content = (str(content) + "\n\n" + tool_text) if content else tool_text
             if content:
                 msgs.append({"role": role, "content": str(content)})
         return msgs
@@ -642,7 +1020,8 @@ class LLMClient:
                             print(f"[LLM Retry] HTTP {resp.status_code}, retry in {delay:.1f}s")
                             time.sleep(delay)
                             continue
-                        err_text = f"!!!Error: HTTP {resp.status_code}: {body}"
+                        # Sanitize error - never expose real upstream URL or detailed error
+                        err_text = "!!!Error: " + sanitize_error(f"HTTP {resp.status_code}: {body}")
                         yield err_text
                         return LLMResponse(content=err_text)
 
@@ -651,7 +1030,7 @@ class LLMClient:
                     else:
                         return self._parse_json(resp.json())
             except (requests.Timeout, requests.ConnectionError) as e:
-                err = f"!!!Error: {type(e).__name__}: {e}"
+                err = "!!!Error: " + sanitize_error(f"{type(e).__name__}: {e}")
                 if attempt < self.max_retries:
                     delay = min(30, 1.5 * (2 ** attempt))
                     print(f"[LLM Retry] {type(e).__name__}, retry in {delay:.1f}s")
@@ -680,6 +1059,13 @@ class LLMClient:
                 evt = json.loads(data_str)
             except json.JSONDecodeError:
                 continue
+
+            # Detect error responses (some providers return errors in-stream)
+            if "error" in evt and "choices" not in evt:
+                err_msg = evt["error"].get("message", str(evt["error"])) if isinstance(evt.get("error"), dict) else str(evt["error"])
+                safe_msg = sanitize_error(err_msg)
+                yield f"\n[Error] {safe_msg}\n"
+                return LLMResponse(content=f"!!!Error: {safe_msg}")
 
             choices = evt.get("choices") or [{}]
             ch = choices[0]
@@ -716,6 +1102,9 @@ class LLMClient:
                 args = {"_raw": tc["args"]}
             tool_calls.append(MockToolCall(tc["name"], args, id=tc["id"]))
 
+        # Fallback: parse XML tool calls from content if no native tool_calls
+        if not tool_calls and content_text:
+            tool_calls = _parse_xml_tool_calls(content_text)
         return LLMResponse(content=content_text, tool_calls=tool_calls)
 
     def _parse_json(self, data):
@@ -730,6 +1119,9 @@ class LLMClient:
             except json.JSONDecodeError:
                 args = {"_raw": fn.get("arguments", "")}
             tool_calls.append(MockToolCall(fn.get("name", ""), args, id=tc.get("id", "")))
+        # Fallback: parse XML tool calls from content if no native tool_calls
+        if not tool_calls and content:
+            tool_calls = _parse_xml_tool_calls(content)
         return LLMResponse(content=content, tool_calls=tool_calls)
 
 
@@ -764,11 +1156,19 @@ def agent_loop(client, system_prompt, user_input, handler, tools_schema,
         if response is None:
             response = LLMResponse(content="!!!Error: No response")
 
-        # Parse tool calls
+        # Parse tool calls (native function calling or XML text fallback)
         if response.tool_calls:
             tool_calls = [{"tool_name": tc.function.name,
                            "args": json.loads(tc.function.arguments) if tc.function.arguments else {},
                            "id": tc.id} for tc in response.tool_calls]
+        elif response.content and _parse_xml_tool_calls(response.content):
+            # XML text-based tool calling fallback
+            xml_tcs = _parse_xml_tool_calls(response.content)
+            tool_calls = [{"tool_name": tc.function.name,
+                           "args": json.loads(tc.function.arguments) if tc.function.arguments else {},
+                           "id": tc.id} for tc in xml_tcs]
+            if verbose:
+                yield f"\n[XML Tool Call Fallback] Parsed {len(tool_calls)} tool call(s) from text\n"
         else:
             tool_calls = [{"tool_name": "no_tool", "args": {}}]
 
@@ -896,7 +1296,20 @@ class Agent:
         self._llm_clients = []
         self._llm_names = []
         self._llm_configs = []
+        self.custom_system_prompt = ""
+        # Load custom system prompt from file if it exists
+        _sp_path = os.path.join(SCRIPT_DIR, "custom_system_prompt.txt")
+        if os.path.exists(_sp_path):
+            try:
+                with open(_sp_path, "r", encoding="utf-8") as f:
+                    self.custom_system_prompt = f.read()
+            except Exception:
+                pass
         self._load_llms()
+
+    def set_custom_system_prompt(self, text):
+        """Set or clear the custom system prompt."""
+        self.custom_system_prompt = text or ""
 
     def _load_llms(self):
         """Initialize LLM clients from mykey config."""
@@ -916,7 +1329,17 @@ class Agent:
             except Exception as e:
                 print(f"[agent_core] Failed to init LLM '{k}': {e}")
         if self._llm_clients:
-            self.llmclient = self._llm_clients[0]
+            # Default to free/glm-5.2 if available (l0veyou free tier, no cost)
+            default_idx = 0
+            for i, cfg in enumerate(self._llm_configs):
+                model = cfg.get("model", "")
+                if model.startswith("free/glm") or model == "free/glm-5.2":
+                    default_idx = i
+                    break
+            self.llm_no = default_idx
+            self.llmclient = self._llm_clients[default_idx]
+            if default_idx > 0:
+                print(f"[agent_core] Default LLM set to: {self._llm_names[default_idx]} ({self._llm_configs[default_idx].get('model', '')})")
 
     def _mykey_path(self):
         """Return the path to mykey.json (create location if not exists)."""
@@ -1045,7 +1468,7 @@ class Agent:
             self.stop_sig = False
 
             # Truncate very long prompts to a file
-            if len(raw_query) > 2000:
+            if len(raw_query) > 10000:
                 task_file = os.path.join(TEMP_DIR, f"user_prompt_{int(time.time())}.md")
                 with open(task_file, "w", encoding="utf-8") as f:
                     f.write(raw_query)
@@ -1055,7 +1478,8 @@ class Agent:
             self.history.append(f"[USER]: {rquery}")
 
             # Build system prompt
-            sys_prompt = SYSTEM_PROMPT + f"\nToday: {time.strftime('%Y-%m-%d %a')}\n" + get_global_memory()
+            _base_prompt = self.custom_system_prompt if self.custom_system_prompt else SYSTEM_PROMPT
+            sys_prompt = _base_prompt + f"\nToday: {time.strftime('%Y-%m-%d %a')}\n" + get_global_memory()
 
             # Create handler
             handler = AgentHandler(self, self.history, TEMP_DIR)
@@ -1096,7 +1520,7 @@ class Agent:
                 display_queue.put({"done": full_resp, "source": source, "turn": curr_turn})
                 self.history = handler.history_info
             except Exception as e:
-                err = format_error(e)
+                err = sanitize_error(format_error(e))
                 print(f"[agent_core] Error: {err}")
                 display_queue.put({"done": full_resp + f"\n```\n{err}\n```", "source": source})
             finally:

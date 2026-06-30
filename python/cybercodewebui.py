@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 cybercodewebui — a Codex-dark–styled web frontend with a self-contained agent.
@@ -44,13 +44,75 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, unquote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = HERE  # For custom_system_prompt.txt etc.
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 from agent_core import (
     Agent, extract_files, strip_files, clean_reply, format_error,
-    smart_format, TEMP_DIR, ROOT_DIR,
+    smart_format, sanitize_error, TEMP_DIR, ROOT_DIR, SYSTEM_PROMPT,
 )
+
+# ===== SECURITY: Auth token + path safety =====
+import secrets as _secrets
+import hashlib as _hashlib
+
+# Generate or load a session auth token on startup
+_AUTH_TOKEN_FILE = os.path.join(SCRIPT_DIR, ".auth_token")
+def _get_auth_token():
+    """Load or generate the local auth token."""
+    try:
+        if os.path.exists(_AUTH_TOKEN_FILE):
+            with open(_AUTH_TOKEN_FILE, "r") as f:
+                return f.read().strip()
+        token = _secrets.token_hex(24)
+        with open(_AUTH_TOKEN_FILE, "w") as f:
+            f.write(token)
+        # Restrict file permissions
+        try:
+            os.chmod(_AUTH_TOKEN_FILE, 0o600)
+        except OSError:
+            pass
+        return token
+    except Exception:
+        return ""
+
+_AUTH_TOKEN = _get_auth_token()
+
+def _check_auth(handler):
+    """Check if the request has a valid auth token. Skip for browser HTML requests."""
+    # Allow browser navigation to the main page (no API access)
+    url = urlparse(handler.path)
+    if url.path in ("", "/"):
+        return True
+    # Allow static assets
+    if url.path.startswith("/assets/") or url.path.endswith((".css", ".js", ".ico", ".png", ".svg")):
+        return True
+    # Check auth header or cookie
+    auth_header = handler.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if _hashlib.sha256(token.encode()).hexdigest() == _hashlib.sha256(_AUTH_TOKEN.encode()).hexdigest():
+            return True
+    # Check cookie
+    cookies = handler.headers.get("Cookie", "")
+    if f"auth_token={_AUTH_TOKEN}" in cookies:
+        return True
+    return False
+
+def _safe_path(base_dir, user_path):
+    """Resolve user_path against base_dir, preventing path traversal."""
+    if not user_path:
+        return None
+    # Normalize and resolve
+    full = os.path.realpath(os.path.join(base_dir, user_path))
+    base_real = os.path.realpath(base_dir)
+    # Ensure the resolved path is within base_dir
+    if not full.startswith(base_real + os.sep) and full != base_real:
+        return None
+    return full
+
+# ===== END SECURITY =====
 
 HTML_PATH = os.path.join(HERE, "cybercodewebui.html")
 SKILLS_DIR = os.path.join(HERE, "skills")
@@ -74,28 +136,135 @@ HF_SKILL_ORDER = [
     "hyperframes-animation", "hyperframes-creative", "hyperframes-media",
     "hyperframes-registry", "general-video", "product-launch-video",
     "website-to-video", "faceless-explainer", "motion-graphics",
+    "l0veyou-image-gen", "edge-tts-tts",
 ]
 
-HF_PREAMBLE = """You have the HyperFrames video skill pack bundled locally.
-HyperFrames renders video from HTML compositions and the `npx hyperframes` CLI.
+HF_PREAMBLE = """## Video Mode — HyperFrames + TTS + Self-Review Workflow
 
-Before writing any video code, read these bundled skill files (use file_read):
-  {skills_path}/hyperframes.md        — entry point + intent router
-  {skills_path}/hyperframes-core.md   — the composition contract (data-* attrs, determinism)
-  {skills_path}/hyperframes-cli.md    — init / lint / validate / preview / render workflow
-  {skills_path}/hyperframes-animation.md  — motion rules + runtime adapters
-  {skills_path}/hyperframes-creative.md   — design direction, palettes, narration
-  {skills_path}/hyperframes-media.md      — TTS, BGM, SFX, captions
+You are in VIDEO MODE. You MUST use tools to create videos. Never just describe what you would do — always execute.
 
-The standard workflow is:
-  1. npx hyperframes init <project-name>     (scaffolds the composition)
-  2. Author the HTML composition per hyperframes-core contract
-  3. npx hyperframes lint && npx hyperframes validate && npx hyperframes inspect
-  4. npx hyperframes preview                 (ask user before rendering)
-  5. npx hyperframes render --output out.mp4 (after user approves)
+### XML Tool Calling (if native function calling is unavailable)
+If you cannot use native tool_calls, use this XML format:
+<tool_use>
+{"name": "tool_name", "arguments": {"key": "value"}}
+</tool_use>
 
-Rendered .mp4 files appear in the UI's video gallery automatically. Use [FILE:path]
-to reference the output so the user can download it.
+### MANDATORY 8-Step Video Generation Workflow
+
+**Step 1: Generate Scene Images**
+Use generate_image for each scene. Generate at least 3 images.
+
+**Step 2: Generate Narration Audio (edge-tts)**
+Use code_run to run this Python script:
+```python
+import subprocess, sys
+try:
+    import edge_tts
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "edge-tts", "-q"])
+    import edge_tts
+import asyncio
+async def gen(text, outfile):
+    c = edge_tts.Communicate(text, "zh-CN-XiaoxiaoNeural")
+    await c.save(outfile)
+texts = ["Scene 1 narration", "Scene 2 narration", "Scene 3 narration"]
+for i, t in enumerate(texts):
+    asyncio.run(gen(t, f"narration_{i}.mp3"))
+print("TTS done")
+```
+
+**Step 3: Initialize HyperFrames Project**
+Use code_run:
+```bash
+npx hyperframes init my-video --example blank --non-interactive
+```
+
+**Step 4: Write HTML Composition**
+Use file_write to create my-video/index.html with:
+- Root div with data-composition-id, data-start, data-duration, data-width=1920, data-height=1080
+- Scene clips as divs with class="clip" data-start data-duration data-track-index
+- GSAP timeline in script tag
+- Audio elements as direct children of root
+- Reference generated images with full paths
+
+**Step 5: Lint and Validate**
+Use code_run: `cd my-video && npx hyperframes lint && npx hyperframes validate`
+
+**Step 6: Render Video**
+Use code_run: `cd my-video && npx hyperframes render --output ../output.mp4`
+
+**Step 7: Mux Audio with Video**
+Use code_run with this Python script:
+```python
+import subprocess, sys
+def get_ffmpeg():
+    try:
+        r = subprocess.run(["ffmpeg", "-formats"], capture_output=True, text=True, timeout=10)
+        if "mp3" in r.stdout.lower(): return "ffmpeg"
+    except: pass
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "imageio-ffmpeg", "-q"])
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+ff = get_ffmpeg()
+# Concatenate narration files
+subprocess.run([ff, "-y", "-i", "narration_0.mp3", "-i", "narration_1.mp3", "-i", "narration_2.mp3",
+                "-filter_complex", "[0:a][1:a][2:a]concat=n=3:v=0:a=1[out]", "-map", "[out]",
+                "narration_full.mp3"], check=True)
+# Mux with video
+subprocess.run([ff, "-y", "-i", "output.mp4", "-i", "narration_full.mp3",
+                "-c:v", "copy", "-c:a", "aac", "-shortest", "final_video.mp4"], check=True)
+print("Mux complete: final_video.mp4")
+```
+
+**Step 8: MANDATORY Self-Review**
+Use code_run to verify the video:
+```python
+import subprocess, json, os
+ff = "ffmpeg"
+try:
+    import imageio_ffmpeg
+    ff = imageio_ffmpeg.get_ffmpeg_exe()
+except: pass
+# Use ffprobe to check video
+probe = subprocess.run([ff.replace("ffmpeg", "ffprobe"), "-v", "quiet", "-print_format", "json",
+                        "-show_format", "-show_streams", "final_video.mp4"],
+                       capture_output=True, text=True)
+info = json.loads(probe.stdout)
+duration = float(info.get("format", {}).get("duration", 0))
+streams = info.get("streams", [])
+has_video = any(s.get("codec_type") == "video" for s in streams)
+has_audio = any(s.get("codec_type") == "audio" for s in streams)
+size = os.path.getsize("final_video.mp4") / 1024 / 1024
+print(f"=== VIDEO SELF-REVIEW ===")
+print(f"Duration: {duration:.1f}s")
+print(f"Video stream: {'YES' if has_video else 'NO'}")
+print(f"Audio stream: {'YES' if has_audio else 'NO'}")
+print(f"File size: {size:.1f} MB")
+if not has_audio:
+    print("WARNING: No audio track! Must fix by muxing audio.")
+if duration < 5:
+    print("WARNING: Video too short!")
+if size < 0.1:
+    print("WARNING: File too small, may be corrupted!")
+score = 100
+if not has_audio: score -= 30
+if not has_video: score -= 50
+if duration < 5: score -= 20
+print(f"Quality Score: {score}/100")
+```
+After self-review, report the results to the user. If issues found, fix them.
+
+### IMPORTANT RULES
+- ALWAYS use tools. Never just describe what you would do.
+- If native function calling doesn't work, use <tool_use> XML format.
+- ALWAYS generate audio with edge-tts.
+- ALWAYS mux audio into the final video.
+- ALWAYS run self-review (Step 8) and report results.
+- NEVER submit a video without checking it has audio.
 """
 
 # ---------------------------------------------------------------------------
@@ -149,7 +318,7 @@ def _hf_skills_list():
 
 
 def _hf_preamble():
-    return HF_PREAMBLE.format(skills_path=SKILLS_DIR)
+    return HF_PREAMBLE.replace('{skills_path}', SKILLS_DIR)
 
 
 def _skills_list():
@@ -297,6 +466,8 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         path, qs = url.path, parse_qs(url.query)
         try:
+            if not _check_auth(self) and path.startswith("/api/"):
+                return self._send_json({"error": "unauthorized"}, 401)
             if path in ("", "/"):
                 return self._serve_html()
             if path == "/api/status":
@@ -306,7 +477,10 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/skills":
                 return self._send_json({"items": _skills_list()})
             if path == "/api/messages":
-                return self._send_json({"items": _extract_messages((qs.get("path") or [""])[0])})
+                # SECURITY: restrict message paths to TEMP_DIR/model_responses
+                _msg_path = (qs.get("path") or [""])[0]
+                _safe_msg = _safe_path(os.path.join(TEMP_DIR, "model_responses"), os.path.basename(_msg_path))
+                return self._send_json({"items": _extract_messages(_safe_msg or "")})
             if path == "/api/hyperframes":
                 return self._send_json({"items": _hf_skills_list(), "preamble": _hf_preamble()})
             if path.startswith("/api/hyperframes/"):
@@ -317,6 +491,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._serve_video(unquote(path[len("/api/video/"):]))
             if path == "/api/llm/get":
                 return self._api_llm_get()
+            if path == "/api/system-prompt":
+                return self._api_system_prompt_get()
             # l0veyou proxy routes
             if path == "/proxy/auth/providers":
                 return self._proxy_get("/auth/providers")
@@ -333,11 +509,15 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"error": "not found"}, 404)
         except Exception as e:
             traceback.print_exc()
-            self._send_json({"error": str(e)}, 500)
+            import traceback as _tb
+            _tb.print_exc()
+            self._send_json({"error": sanitize_error(str(e))}, 500)  # SECURITY: sanitized, no upstream info
 
     def do_POST(self):
         path = urlparse(self.path).path
         try:
+            if not _check_auth(self):
+                return self._send_json({"error": "unauthorized"}, 401)
             if path == "/api/chat":
                 return self._api_chat()
             if path == "/api/llm":
@@ -370,6 +550,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._proxy_chat_completions()
             if path == "/api/auth/configure-llm":
                 return self._api_configure_llm()
+            if path == "/api/system-prompt":
+                return self._api_system_prompt_set()
             if path == "/proxy/v1/images/generations":
                 return self._proxy_post_auth("/v1/images/generations")
             if path == "/proxy/v1/responses":
@@ -383,7 +565,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"error": "not found"}, 404)
         except Exception as e:
             traceback.print_exc()
-            self._send_json({"error": str(e)}, 500)
+            self._send_json({"error": sanitize_error(str(e))}, 500)
 
     # ---- GET handlers ----
     def _serve_html(self):
@@ -396,6 +578,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        # SECURITY: set auth cookie so frontend API calls work automatically
+        self.send_header("Set-Cookie", f"auth_token={_AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Strict")
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -430,13 +614,20 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json({"slug": slug, "content": content})
 
     def _serve_video(self, relpath):
-        # Resolve safely (no path traversal)
-        candidates = [
-            os.path.join(HERE, relpath),
-            os.path.join(TEMP_DIR, relpath),
-            os.path.join(ROOT_DIR, relpath),
-        ]
-        fpath = next((c for c in candidates if os.path.isfile(c)), None)
+        # SECURITY: strict path traversal prevention + extension whitelist
+        if not relpath or ".." in relpath:
+            return self._send_json({"error": "invalid path"}, 400)
+        # Only allow video/audio extensions
+        allowed_exts = (".mp4", ".webm", ".mp3", ".wav", ".ogg")
+        if not relpath.lower().endswith(allowed_exts):
+            return self._send_json({"error": "unsupported file type"}, 403)
+        # Resolve within allowed directories only
+        candidates = []
+        for base in [HERE, TEMP_DIR, ROOT_DIR]:
+            safe = _safe_path(base, relpath)
+            if safe and os.path.isfile(safe):
+                candidates.append(safe)
+        fpath = candidates[0] if candidates else None
         if not fpath:
             return self._send_json({"error": "video not found"}, 404)
         try:
@@ -499,7 +690,8 @@ class Handler(BaseHTTPRequestHandler):
         })
 
     def _api_llm_get(self):
-        """Return the full config for a single LLM (for the edit modal)."""
+        """Return the config for a single LLM (for the edit modal).
+        Cloud/scanned models are protected - apikey is never returned."""
         agent = get_agent()
         qs = parse_qs(urlparse(self.path).query)
         try:
@@ -509,7 +701,19 @@ class Handler(BaseHTTPRequestHandler):
         cfg = agent.get_llm_detail(idx)
         if not cfg:
             return self._send_json({"error": "LLM not found"}, 404)
-        self._send_json({"cfg": cfg})
+        # Check if this is a cloud-protected model (session token or long key)
+        is_protected = False
+        if isinstance(cfg, dict):
+            ak = cfg.get("apikey", "")
+            apibase = cfg.get("apibase", "")
+            if ak.startswith("sess-") or ak.startswith("Bearer ") or "l0veyou" in apibase or len(ak) > 100:
+                is_protected = True
+                cfg["apikey"] = ""
+                cfg["remark"] = "[protected]"
+        if not is_protected and isinstance(cfg, dict) and cfg.get("apikey"):
+            ak = cfg["apikey"]
+            cfg["apikey"] = ak[:6] + "***" + ak[-4:] if len(ak) > 12 else "***"
+        self._send_json({"cfg": cfg, "protected": is_protected})
 
     def _build_llm_cfg(self, data):
         """Build a clean LLM config dict from request data."""
@@ -633,7 +837,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
         except Exception as e:
-            self._send_json({"error": str(e)}, 502)
+            self._send_json({"error": sanitize_error(str(e))}, 502)
 
     def _proxy_get_auth(self, l0veyou_path):
         """Proxy a GET request to l0veyou with Bearer token. Errors are sanitized."""
@@ -748,7 +952,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Not found")
         except Exception as e:
-            self._send_json({"error": str(e)}, 502)
+            self._send_json({"error": sanitize_error(str(e))}, 502)
 
     def _proxy_chat_completions(self):
         """Proxy chat completions with SSE streaming support. Errors are sanitized."""
@@ -801,12 +1005,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("X-Accel-Buffering", "no")
                 self.end_headers()
                 try:
-                    self.wfile.write(b"data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}
-
-")
-                    self.wfile.write(b"data: [DONE]
-
-")
+                    self.wfile.write(b"data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}\n\n")
+                    self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError):
                     pass
@@ -822,12 +1022,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("X-Accel-Buffering", "no")
                 self.end_headers()
                 try:
-                    self.wfile.write(b"data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}
-
-")
-                    self.wfile.write(b"data: [DONE]
-
-")
+                    self.wfile.write(b"data: {\"choices\":[{\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}\n\n")
+                    self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError):
                     pass
@@ -841,10 +1037,12 @@ class Handler(BaseHTTPRequestHandler):
         if not token:
             return self._send_json({"error": "missing token"})
         model = data.get("model", "")
+        if not model or model == "auto":
+            model = "deepseek-v4-flash"
         agent = get_agent()
         cfg = {
             "name": "CyberCode",
-            "model": model or "auto",
+            "model": model,
             "apibase": L0VEYOU_BASE,
             "apikey": token,
             "remark": "l0veyou backend",
@@ -870,6 +1068,36 @@ class Handler(BaseHTTPRequestHandler):
             "llms": [{"idx": i, "name": n, "active": a, "remark": agent.llm_remark(i)} for i, n, a in llms],
         })
 
+
+    def _api_system_prompt_get(self):
+        """Return the current custom system prompt (or default)."""
+        custom = ""
+        if os.path.exists(os.path.join(SCRIPT_DIR, "custom_system_prompt.txt")):
+            try:
+                with open(os.path.join(SCRIPT_DIR, "custom_system_prompt.txt"), "r", encoding="utf-8") as f:
+                    custom = f.read()
+            except Exception:
+                pass
+        self._send_json({"custom": custom, "default": SYSTEM_PROMPT[:200] + "..."})
+
+    def _api_system_prompt_set(self):
+        """Set or clear the custom system prompt."""
+        data = self._read_json()
+        custom = (data.get("custom") or "").strip()
+        sp_path = os.path.join(SCRIPT_DIR, "custom_system_prompt.txt")
+        if custom:
+            with open(sp_path, "w", encoding="utf-8") as f:
+                f.write(custom)
+        else:
+            # Clear custom prompt — use default
+            if os.path.exists(sp_path):
+                os.remove(sp_path)
+        # Update the agent's system prompt
+        agent = get_agent()
+        if hasattr(agent, 'set_custom_system_prompt'):
+            agent.set_custom_system_prompt(custom)
+        self._send_json({"ok": True, "message": "System prompt updated", "active": bool(custom)})
+
     def _api_chat(self):
         data = self._read_json()
         text = (data.get("text") or "").strip()
@@ -882,8 +1110,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json({"error": "agent is already running — send /api/stop first"}, 409)
 
         is_video = bool(data.get("video"))
-        preamble = _hf_preamble() if is_video else ""
-        prompt = f"{FILE_HINT}\n\n{preamble}\n\n{text}" if preamble else f"{FILE_HINT}\n\n{text}"
+        if is_video:
+            agent.custom_system_prompt = _hf_preamble()
+            prompt = f"{FILE_HINT}\n\n{text}"
+        else:
+            agent.custom_system_prompt = ""
+            prompt = f"{FILE_HINT}\n\n{text}"
         dq = agent.put_task(prompt, source="user")
 
         # SSE headers
@@ -934,7 +1166,7 @@ class Handler(BaseHTTPRequestHandler):
                         break
         except Exception as e:
             try:
-                emit({"type": "error", "message": f"{type(e).__name__}: {e}"})
+                emit({"type": "error", "message": sanitize_error(f"{type(e).__name__}: {e}")})
             except Exception:
                 pass
         finally:
