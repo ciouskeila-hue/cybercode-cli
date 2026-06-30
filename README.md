@@ -21,7 +21,7 @@
 
 CyberCode 是一个跑在你本地浏览器里的 AI Agent。它不是套壳聊天框，而是一个**有手有脚的执行者**——能真正操作文件系统、运行脚本、访问网络、生成多媒体内容。
 
-最关键的是：**接入即免费使用 GPT-5.5、Claude Opus 4.8、GLM-5.2、Gemini 3.1 Pro、DeepSeek V4 等前沿模型**，还能免费生成 gpt-image-2 图片和 Nanobanana 视频。所有模型通过统一的 l0veyou 网关代理，错误日志经过脱敏处理，前端用户看不到任何上游基础设施信息。
+最关键的是：**接入即免费使用 GPT-5.5、Claude Opus 4.8、GLM-5.2、Gemini 3.1 Pro、DeepSeek V4 等前沿模型**，还能免费生成 gpt-image-2 图片和 Nanobanana 视频。所有模型通过统一网关代理，错误日志经过脱敏处理，前端用户看不到任何上游基础设施信息。
 
 <div align="center">
 <img src="docs/images/ui-chat.jpg" alt="CyberCode Web UI" width="90%">
@@ -60,7 +60,7 @@ CyberCode 是一个跑在你本地浏览器里的 AI Agent。它不是套壳聊�
 
 ## 内置 32+ 前沿模型
 
-所有模型通过 l0veyou 网关统一代理，切换模型只需一次 API 调用。以下是部分模型清单（完整列表见 `mykey.json`）：
+所有模型通过统一网关代理，切换模型只需一次 API 调用。以下是部分模型清单：
 
 ### 对话与推理模型
 
@@ -159,54 +159,37 @@ HyperFrames 包含 7 个领域技能，按需加载：
 
 ## 快速开始
 
-### 环境要求
-
-- Python 3.8+
-- `pip install requests`（唯一外部依赖）
-
-### 启动
+### 方式一：npm 一键安装（推荐）
 
 ```bash
-# 克隆仓库
-git clone https://github.com/ciouskeila-hue/cybercode.git
-cd cybercode
-
-# 配置模型（编辑 mykey.json，填入 l0veyou 网关地址和密钥）
-# 也可以启动后在 Web UI 里通过"自动配置"按钮一键填入
-
-# 启动 Web 服务
-python cybercodewebui.py --host 0.0.0.0 --port 18600
+npm install -g cybercode-cli
 ```
 
-浏览器打开 `http://localhost:18600`，默认选中 `free/glm-5.2`（零成本），直接开始对话。
+安装完成后，在终端输入：
 
-### 首次配置
-
-CyberCode 支持两种配置方式：
-
-**方式一：编辑 mykey.json**
-
-```json
-{
-  "llm1": {
-    "name": "GLM-5.2 (Free)",
-    "model": "free/glm-5.2",
-    "apibase": "https://l0veyou.com",
-    "apikey": "sess-你的会话令牌",
-    "remark": "默认模型，支持函数调用"
-  },
-  "llm2": {
-    "name": "GPT-5.5",
-    "model": "gpt-5.5",
-    "apibase": "https://l0veyou.com/v1",
-    "apikey": "sk-你的API密钥"
-  }
-}
+```bash
+cybercode web
 ```
 
-**方式二：Web UI 自动配置**
+终端会显示本地服务地址，浏览器打开即可看到 CyberCode 界面。**无需任何配置**——模型密钥、网关地址、默认参数全部自动就绪，开箱即用。
 
-在登录面板输入 l0veyou 会话令牌，点击"自动配置"，系统自动写入 mykey.json 并切换到该模型。
+### 方式二：克隆仓库安装
+
+```bash
+git clone https://github.com/ciouskeila-hue/cybercode-cli.git
+cd cybercode-cli
+python python/cybercodewebui.py
+```
+
+同样无需手动配置，启动后浏览器访问 `http://localhost:18600` 即可。
+
+### 开始使用
+
+打开浏览器后，你会看到一个登录界面。**注册或登录 CyberCode 账号**即可进入主界面——所有模型（GPT-5.5、Claude Opus 4.8、GLM-5.2 等 32+ 前沿模型）立即可用，图片和视频生成功能也已就绪。
+
+登录后，默认选中 `free/glm-5.2`（零成本模型），你可以随时在左侧模型选择器中切换到其他模型。直接在输入框输入你的需求，Agent 会自动调用工具完成任务。
+
+> **零配置理念**：CyberCode 在启动时自动完成所有底层配置——模型路由、密钥管理、安全令牌生成全部在后台完成。你作为用户，只需要登录账号，剩下的交给系统。
 
 ---
 
@@ -243,9 +226,9 @@ CyberCode 在安全上做了多层防护，确保 Agent 的"物理级权限"不�
 - **视频路径白名单** — `/api/video/` 仅允许 `.mp4` / `.webm` / `.mp3`，禁止 `..`
 - **SSRF 阻断** — `web_scan` 屏蔽私有 IP、回环地址、云元数据端点（169.254.169.254）
 - **SSL 强制校验** — 全链路 `verify=True`，绝不关闭证书验证
-- **错误脱敏** — `sanitize_error()` 隐藏上游 URL、API key、IP、friendli/l0veyou 关键字、traceback
+- **错误脱敏** — `sanitize_error()` 隐藏上游 URL、API key、IP、内部服务名、traceback
 - **密钥掩码** — `/api/llm/get` 返回的密钥自动掩码（如 `sk-5b8***0b8d`）
-- **Admin Token 环境变量** — 管理员令牌从 `L0VEYOU_ADMIN_TOKEN` 读取，不硬编码
+- **Admin Token 环境变量** — 管理员令牌从环境变量读取，不硬编码
 - **无 traceback 返回** — 错误响应只含消息，不含堆栈
 
 ---
@@ -259,11 +242,12 @@ CyberCode 的 Agent 核心架构（agent loop 结构、9 工具设计、记忆�
 在此之上，CyberCode 做了以下扩展：
 
 - 重写 LLM Client，支持 OpenAI 兼容流式 + 函数调用
-- 实现 l0veyou 网关代理层（模型路由 + 会话令牌 + 错误脱敏）
+- 实现统一网关代理层（模型路由 + 会话令牌 + 错误脱敏）
 - 集成 HyperFrames 视频引擎（HTML → ffmpeg 管线）
 - 集成 edge-tts 语音合成（自动安装逻辑内置于系统 prompt）
 - 构建 Codex-dark 风格 Web UI（i18n 中英双语）
 - 加入完整安全层（Token / 沙箱 / SSRF / 脱敏）
+- 零配置自动部署（npm 安装后直接 `cybercode web` 启动）
 
 ### 依赖
 
@@ -283,9 +267,9 @@ cybercode/
 ├── agent_core.py            # Agent 核心：LLM Client + 9 工具 + agent loop
 ├── cybercodewebui.py        # Web 服务：HTTP API + SSE 流式 + 代理层
 ├── cybercodewebui.html      # 前端：Codex-dark UI + i18n + 实时聊天
-├── mykey.json               # 模型配置（gitignore，不入库）
+├── mykey.json               # 模型配置（自动生成，不入库）
 ├── custom_system_prompt.txt # 自定义系统 prompt（热重载）
-├── .auth_token              # 自动生成的会话令牌（gitignore）
+├── .auth_token              # 自动生成的安全令牌（不入库）
 ├── skills/                  # 14 个技能文档
 │   ├── hyperframes.md       # 视频引擎入口
 │   ├── hyperframes-core.md  # HTML 组合契约
@@ -294,7 +278,7 @@ cybercode/
 │   ├── hyperframes-media.md
 │   ├── hyperframes-cli.md
 │   ├── hyperframes-registry.md
-│   ├── l0veyou-image-gen.md # 图片生成 API
+│   ├── image-gen.md         # 图片生成 API
 │   ├── edge-tts-tts.md      # 语音合成
 │   ├── general-video.md     # 通用视频路由
 │   ├── motion-graphics.md
@@ -369,29 +353,25 @@ Agent（视频模式，自动注入 HyperFrames 前导）：
 
 ## 配置项
 
+CyberCode 采用零配置设计，启动时自动完成所有配置。以下环境变量供高级用户调整：
+
 ### 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `L0VEYOU_BASE` | `https://l0veyou.com` | l0veyou 网关地址 |
-| `L0VEYOU_ADMIN_TOKEN` | — | 管理员令牌（图片生成需要） |
+| `CYBERCODE_PORT` | `18600` | Web 服务端口 |
+| `CYBERCODE_HOST` | `127.0.0.1` | 监听地址 |
 
-### mykey.json 字段
+### 自动配置机制
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `name` | string | 显示名称 |
-| `model` | string | 模型 ID（如 `free/glm-5.2`） |
-| `apibase` | string | API 地址（如 `https://l0veyou.com/v1`） |
-| `apikey` | string | API 密钥（`sk-` 或 `sess-` 前缀） |
-| `temperature` | float | 温度，默认 1 |
-| `max_tokens` | int | 最大输出 token |
-| `stream` | bool | 是否流式，默认 true |
-| `timeout` | int | 连接超时秒数，默认 10 |
-| `read_timeout` | int | 读取超时秒数，默认 240 |
-| `max_retries` | int | 重试次数，默认 3 |
-| `context_win` | int | 上下文窗口，默认 30000 |
-| `remark` | string | 备注（如"支持函数调用"） |
+CyberCode 在首次启动时自动完成以下工作，用户无需干预：
+
+- 连接模型网关，获取可用模型列表
+- 生成会话安全令牌（`.auth_token`）
+- 选择默认模型（`free/glm-5.2`，零成本）
+- 初始化记忆系统和工作目录
+
+用户只需登录 CyberCode 账号，系统自动处理其余一切。
 
 ---
 
@@ -399,11 +379,11 @@ Agent（视频模式，自动注入 HyperFrames 前导）：
 
 **Q：真的免费吗？**
 
-所有模型通过 l0veyou 网关代理。`free/` 前缀的模型（如 `free/glm-5.2`）走免费层，零成本。其余模型（GPT-5.5、Claude Opus 4.8 等）需要 l0veyou 会话令牌或 API 密钥，具体额度取决于 l0veyou 平台政策。
+是的。CyberCode 默认使用 `free/glm-5.2` 模型，完全免费。登录 CyberCode 账号后，GPT-5.5、Claude Opus 4.8 等前沿模型也可直接使用，具体额度取决于平台政策。
 
 **Q：需要翻墙吗？**
 
-l0veyou 网关在国内可直连。如果你访问 `l0veyou.com` 有困难，可以设置 `L0VEYOU_BASE` 环境变量指向自建反代。
+不需要。模型网关在国内可直连，开箱即用。
 
 **Q：支持函数调用吗？**
 
@@ -415,7 +395,7 @@ l0veyou 网关在国内可直连。如果你访问 `l0veyou.com` 有困难，可
 
 **Q：数据会上传吗？**
 
-不会。CyberCode 跑在你本地，所有文件操作、代码执行、记忆存储都在本地磁盘。只有 LLM 推理请求会发送到 l0veyou 网关，且错误日志经过脱敏，不暴露你的文件路径或敏感数据。
+不会。CyberCode 跑在你本地，所有文件操作、代码执行、记忆存储都在本地磁盘。只有 LLM 推理请求会发送到模型网关，且错误日志经过脱敏，不暴露你的文件路径或敏感数据。
 
 ---
 
@@ -424,11 +404,11 @@ l0veyou 网关在国内可直连。如果你访问 `l0veyou.com` 有困难，可
 ### 本地调试
 
 ```bash
-# 启动并开启详细日志
-python cybercodewebui.py --port 18600 --host 0.0.0.0
+# 克隆仓库后直接运行
+python python/cybercodewebui.py --port 18600 --host 0.0.0.0
 
 # 自定义 LLM 启动序号
-python cybercodewebui.py --llm_no 4
+python python/cybercodewebui.py --llm_no 4
 ```
 
 ### 自定义系统 Prompt
@@ -452,7 +432,5 @@ CyberCode 的 Agent 核心架构源自 [GenericAgent](https://github.com/lsdefin
 <div align="center">
 
 **CyberCode — 让前沿大模型真正动手干活。**
-
-<img src="docs/images/banner.jpg" alt="CyberCode" width="60%">
 
 </div>
