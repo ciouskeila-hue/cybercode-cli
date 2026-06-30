@@ -2,178 +2,177 @@
 
 # CyberCode
 
-### 免费驱动 GPT-5.5、Claude Opus 4.8、GLM-5.2 的全能 AI Agent 平台
-
-<img src="docs/images/ui-real.png" alt="CyberCode 真实运行界面" width="100%">
+### The All-in-One AI Agent Platform — Free GPT-5.5, Claude Opus 4.8 & GLM-5.2
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Self-Contained](https://img.shields.io/badge/Self--Contained-zero%20deps-green.svg)](#)
 [![Streaming](https://img.shields.io/badge/Streaming-SSE%20%2B%20FC-orange.svg)](#)
 
-**一个自包含的物理级 AI Agent — 直接调用前沿大模型，自带 9 个系统级工具，能读写文件、执行代码、抓取网页、生成图片与视频。**
+**A self-contained, physical-level AI Agent — directly drives frontier LLMs with 9 built-in system tools that read/write files, execute code, scan the web, and generate images & videos.**
+
+[中文文档](README_CN.md)
 
 </div>
 
 ---
 
-## 这是什么
+## What is CyberCode
 
-CyberCode 是一个跑在你本地浏览器里的 AI Agent。它不是套壳聊天框，而是一个**有手有脚的执行者**——能真正操作文件系统、运行脚本、访问网络、生成多媒体内容。
+CyberCode is an AI Agent that runs in your local browser. It's not a chatbot shell — it's a **doer with hands and feet** that can actually operate your file system, run scripts, access the network, and generate multimedia content.
 
-最关键的是：**接入即免费使用 GPT-5.5、Claude Opus 4.8、GLM-5.2、Gemini 3.1 Pro、DeepSeek V4 等前沿模型**，还能免费生成 gpt-image-2 图片和 Nanobanana 视频。所有模型通过统一网关代理，错误日志经过脱敏处理，前端用户看不到任何上游基础设施信息。
+The key point: **use GPT-5.5, Claude Opus 4.8, GLM-5.2, Gemini 3.1 Pro, DeepSeek V4 and 32+ frontier models for free**, plus free gpt-image-2 image generation and Nanobanana video generation. All models are proxied through a unified gateway with sanitized error logs — frontend users never see any upstream infrastructure details.
 
 <div align="center">
-<img src="docs/images/ui-chat.jpg" alt="CyberCode Web UI" width="90%">
-<p><sub>CyberCode Web 界面 — Codex-dark 风格，左侧模型选择器，右侧技能面板</sub></p>
+<img src="docs/images/ui-real.png" alt="CyberCode Real UI Screenshot" width="90%">
+<p><sub>CyberCode Web UI — Codex-dark theme, model selector on the left, skills panel on the right</sub></p>
 </div>
 
 ---
 
-## 核心能力一览
+## Core Capabilities
 
-| 能力 | 说明 |
-|------|------|
-| **前沿模型免费调用** | GPT-5.5 / Claude Opus 4.8 / GLM-5.2 / Gemini 3.1 Pro / DeepSeek V4 Flash 等 32+ 模型 |
-| **免费图片生成** | gpt-image-2（1024×1024 / 竖版 / 横版），支持文生图与图生图编辑 |
-| **免费视频生成** | Nanobanana 模型 + HyperFrames HTML 渲染引擎，支持旁白配音（edge-tts） |
-| **9 个原子工具** | 代码执行 / 文件读写 / 网页抓取 / JS 执行 / 图片生成 / 视觉理解 / 用户交互 / 记忆管理 |
-| **函数调用（FC）** | 支持 OpenAI tools 规范的 function calling，流式与非流式 |
-| **三级记忆系统** | L0 元规则 / L1 洞察索引 / L2 稳定事实 / L3 任务 SOP |
-| **安全沙箱** | Token 认证 / 路径防穿越 / SSRF 阻断 / SSL 强制校验 / 错误脱敏 |
-| **自包含部署** | 仅需 Python 标准库 + requests，无 LangChain / Playwright / 浏览器二进制依赖 |
+| Capability | Details |
+|------------|---------|
+| **Free Frontier Models** | GPT-5.5 / Claude Opus 4.8 / GLM-5.2 / Gemini 3.1 Pro / DeepSeek V4 Flash and 32+ models |
+| **Free Image Generation** | gpt-image-2 (1024x1024 / portrait / landscape), text-to-image and image editing |
+| **Free Video Generation** | Nanobanana model + HyperFrames HTML rendering engine, with edge-tts narration |
+| **9 Atomic Tools** | Code execution / File read-write / Web scraping / JS execution / Image gen / Vision / User interaction / Memory |
+| **Function Calling** | OpenAI tools-compatible function calling, streaming and non-streaming |
+| **3-Level Memory** | L0 meta-rules / L1 insight index / L2 stable facts / L3 task SOPs |
+| **Self-Contained** | Only Python stdlib + requests needed, no LangChain / Playwright / browser binary deps |
 
 ---
 
-## 为什么用 CyberCode
+## Why CyberCode
 
-市面上大多数 AI 客户端要么是纯聊天框（没有执行能力），要么是笨重的框架（依赖一堆 Node 模块和浏览器内核）。CyberCode 走了一条不同的路：
+Most AI clients on the market are either pure chat boxes (no execution capability) or heavy frameworks (depending on a pile of Node modules and browser kernels). CyberCode takes a different path:
 
-**把 Agent 做薄，把模型做厚。** 核心只有约 1300 行 Python，但通过统一的 OpenAI 兼容接口接入了三十多个前沿模型。你写一段需求，它自己决定调用哪个工具、读哪个文件、跑哪段代码——整个过程流式输出，你看着它干活。
+**Keep the Agent thin, make the models thick.** The core is only about 1,300 lines of Python, but it connects to 30+ frontier models through a unified OpenAI-compatible interface. You write a requirement, it decides which tools to call, which files to read, which code to run — the whole process streams in real time, you watch it work.
 
 <div align="center">
 <img src="docs/images/architecture.jpg" alt="Architecture Diagram" width="80%">
-<p><sub>架构：Agent Core 居中调度，LLM Client 流式通信，9 工具各司其职</sub></p>
+<p><sub>Architecture: Agent Core orchestrates, LLM Client streams, 9 tools each serve their purpose</sub></p>
 </div>
 
 ---
 
-## 内置 32+ 前沿模型
+## 32+ Built-in Frontier Models
 
-所有模型通过统一网关代理，切换模型只需一次 API 调用。以下是部分模型清单：
+All models are proxied through a unified gateway — switching models takes a single API call. Partial model list:
 
-### 对话与推理模型
+### Conversation & Reasoning Models
 
-| 模型 | 系列 | 备注 |
-|------|------|------|
-| `gpt-5.5` | OpenAI GPT | 旗舰对话模型 |
-| `gpt-5.4` | OpenAI GPT | 高性价比 |
-| `gpt-5-mini` | OpenAI GPT | 轻量快速 |
-| `gpt-5.3-codex` | OpenAI Codex | 代码专精 |
-| `gpt-4.1` | OpenAI GPT | 经典稳定 |
-| `claude-opus-4-8` | Anthropic Claude | 顶配推理 |
-| `claude-opus-4-7` | Anthropic Claude | 长文分析 |
-| `gemini-3.1-pro-preview` | Google Gemini | 多模态 |
-| `gemini-3.5-flash` | Google Gemini | 极速响应 |
-| `deepseek-v4-flash` | DeepSeek | 国产顶配 |
-| `deepseek-v4-pro` | DeepSeek | 深度推理 |
-| `deepseek-r1-14b` | DeepSeek R1 | 推理链 |
-| `glm-5.2` | 智谱 GLM | **免费层，支持 FC** |
-| `free/glm-5.2` | 智谱 GLM | **默认模型，零成本** |
-| `kimi-k2.7` | Moonshot Kimi | 超长上下文 |
-| `minimax-m3` | MiniMax | 通用强基 |
-| `qwen-2.5-coder-14b` | 阿里通义 | 代码生成 |
-| `llama-3.1-8b` | Meta Llama | 开源标杆 |
-| `mistral-small-24b` | Mistral | 欧洲旗舰 |
+| Model | Family | Notes |
+|-------|--------|-------|
+| `gpt-5.5` | OpenAI GPT | Flagship conversational model |
+| `gpt-5.4` | OpenAI GPT | High cost-efficiency |
+| `gpt-5-mini` | OpenAI GPT | Lightweight & fast |
+| `gpt-5.3-codex` | OpenAI Codex | Code-specialized |
+| `gpt-4.1` | OpenAI GPT | Classic & stable |
+| `claude-opus-4-8` | Anthropic Claude | Top-tier reasoning |
+| `claude-opus-4-7` | Anthropic Claude | Long-context analysis |
+| `gemini-3.1-pro-preview` | Google Gemini | Multimodal |
+| `gemini-3.5-flash` | Google Gemini | Ultra-fast response |
+| `deepseek-v4-flash` | DeepSeek | Top-tier domestic |
+| `deepseek-v4-pro` | DeepSeek | Deep reasoning |
+| `deepseek-r1-14b` | DeepSeek R1 | Reasoning chain |
+| `glm-5.2` | Zhipu GLM | **Free tier, FC support** |
+| `free/glm-5.2` | Zhipu GLM | **Default model, zero cost** |
+| `kimi-k2.7` | Moonshot Kimi | Ultra-long context |
+| `minimax-m3` | MiniMax | Strong general baseline |
+| `qwen-2.5-coder-14b` | Alibaba Qwen | Code generation |
+| `llama-3.1-8b` | Meta Llama | Open-source standard |
+| `mistral-small-24b` | Mistral | European flagship |
 
-### 多媒体生成模型
+### Multimedia Generation Models
 
-| 模型 | 用途 | 调用方式 |
-|------|------|----------|
-| `gpt-image-2` | 文生图 / 图生图 | 异步 creation-tasks API |
-| `codex-gpt-image-2` | 图像编辑 | image-edits 端点 |
-| `nanobanana` | 视频生成 | HyperFrames + ffmpeg 合成 |
-| `hy-mt1` | 多模态理解 | 视觉问答 |
+| Model | Use Case | Method |
+|-------|----------|--------|
+| `gpt-image-2` | Text-to-image / Image-to-image | Async creation-tasks API |
+| `codex-gpt-image-2` | Image editing | image-edits endpoint |
+| `nanobanana` | Video generation | HyperFrames + ffmpeg pipeline |
+| `hy-mt1` | Multimodal understanding | Visual Q&A |
 
 <div align="center">
 <img src="docs/images/media-gen.jpg" alt="Media Generation" width="90%">
-<p><sub>图片生成与视频创作 — 左侧 AI 生图，右侧 HyperFrames 时间轴</sub></p>
+<p><sub>Image generation & video creation — AI image gen on the left, HyperFrames timeline on the right</sub></p>
 </div>
 
 ---
 
-## 9 个原子工具
+## 9 Atomic Tools
 
-Agent 的工作方式不是"聊天"，而是**调用工具完成任务**。CyberCode 内置 9 个物理级工具，覆盖系统操作的方方面面：
+The Agent works not by "chatting" but by **calling tools to complete tasks**. CyberCode has 9 physical-level tools covering all aspects of system operation:
 
 <div align="center">
 <img src="docs/images/tools.jpg" alt="9 Atomic Tools" width="85%">
 </div>
 
-| 工具 | 能力 | 示例 |
-|------|------|------|
-| `tool_code_run` | 执行 Python / Bash / Shell 脚本 | 跑数据分析、装依赖、调系统命令 |
-| `tool_file_read` | 读取任意文本文件，支持行号与范围 | 看日志、查源码、读配置 |
-| `tool_file_write` | 覆盖 / 追加 / 前插写入文件 | 生成代码、写报告、改配置 |
-| `tool_file_patch` | 精确搜索替换文件片段 | 修 bug、重构函数 |
-| `tool_web_scan` | 抓取网页并提取正文 | 读文档、爬数据、查资料 |
-| `tool_web_execute_js` | 在浏览器里跑 JavaScript | 自动化操作、提取动态内容 |
-| `tool_generate_image` | 调用 gpt-image-2 生成图片 | 配图、UI 稿、插画 |
-| `tool_view_image` | 视觉理解图片内容 | 看截图找 bug、描述画面 |
-| `tool_ask_user` | 向用户提问并等待回答 | 澄清需求、确认危险操作 |
+| Tool | Capability | Example |
+|------|-----------|---------|
+| `tool_code_run` | Execute Python / Bash / Shell scripts | Run data analysis, install deps, call system commands |
+| `tool_file_read` | Read any text file, with line numbers and ranges | Check logs, read source, view config |
+| `tool_file_write` | Overwrite / append / prepend file content | Generate code, write reports, edit config |
+| `tool_file_patch` | Precise search-and-replace file fragments | Fix bugs, refactor functions |
+| `tool_web_scan` | Scrape web pages and extract body text | Read docs, crawl data, look up info |
+| `tool_web_execute_js` | Run JavaScript in the browser | Automate operations, extract dynamic content |
+| `tool_generate_image` | Generate images via gpt-image-2 | Illustrations, UI mockups, artwork |
+| `tool_view_image` | Visually understand image content | Read screenshots to find bugs, describe scenes |
+| `tool_ask_user` | Ask the user questions and wait for answers | Clarify requirements, confirm risky operations |
 
-此外还有两个记忆工具：`update_working_checkpoint`（短期笔记）和 `start_long_term_update`（长期经验沉淀），让 Agent 在长任务中不迷路、在重复任务中更聪明。
-
----
-
-## HyperFrames 视频引擎
-
-CyberCode 内置 HyperFrames 技能集——一个**用 HTML 渲染视频**的框架。你描述想要什么视频，Agent 自动写 HTML 组合（带 `data-*` 时间属性），然后用 GSAP / Lottie / Three.js 做动画，最后 ffmpeg 合成带音频的 MP4。
-
-```
-用户："做一个 10 秒的猫咪科普短视频，要有旁白"
-  ↓
-Agent 决策路径：
-  1. 调 gpt-image-2 生成 3 张场景图
-  2. 调 edge-tts 合成中文旁白 MP3
-  3. 写 HyperFrames HTML 组合（GSAP 时间轴 + 淡入淡出）
-  4. ffmpeg 合成 H.264 1920x1080 + AAC 音轨
-  5. 自检：视频时长、分辨率、音频存在性 → 100/100
-  ↓
-输出：cat_video_final.mp4
-```
-
-HyperFrames 包含 7 个领域技能，按需加载：
-
-| 技能 | 用途 |
-|------|------|
-| `hyperframes-core` | HTML 组合作者契约（`data-*` 属性、clips、tracks） |
-| `hyperframes-animation` | 原子动画（GSAP / Lottie / Three.js / CSS / WAAPI） |
-| `hyperframes-creative` | 创意指导（配色、排版、旁白、节拍） |
-| `hyperframes-media` | TTS 配音、背景音乐、字幕、背景去除 |
-| `hyperframes-cli` | 开发循环（init / lint / render / publish） |
-| `hyperframes-registry` | 注册表组件安装 |
-| `general-video` | 通用视频工作流路由 |
+Additionally, two memory tools: `update_working_checkpoint` (short-term notes) and `start_long_term_update` (long-term experience), keeping the Agent on track during long tasks and smarter on repeated ones.
 
 ---
 
-## 快速开始
+## HyperFrames Video Engine
 
-### 方式一：npm 一键安装（推荐）
+CyberCode includes the HyperFrames skill set — a framework for **rendering video with HTML**. You describe what video you want, the Agent automatically writes HTML compositions (with `data-*` timing attributes), then uses GSAP / Lottie / Three.js for animation, and finally ffmpeg composites an MP4 with audio.
+
+```
+User: "Make a 10-second cat science video with narration"
+  ↓
+Agent decision path:
+  1. Call gpt-image-2 to generate 3 scene images
+  2. Call edge-tts to synthesize narration MP3
+  3. Write HyperFrames HTML composition (GSAP timeline + fade in/out)
+  4. ffmpeg composites H.264 1920x1080 + AAC audio
+  5. Self-check: duration, resolution, audio presence → 100/100
+  ↓
+Output: cat_video_final.mp4
+```
+
+HyperFrames includes 7 domain skills, loaded on demand:
+
+| Skill | Purpose |
+|-------|---------|
+| `hyperframes-core` | HTML composition author contract (`data-*` attrs, clips, tracks) |
+| `hyperframes-animation` | Atomic animations (GSAP / Lottie / Three.js / CSS / WAAPI) |
+| `hyperframes-creative` | Creative direction (color, typography, narration, beat) |
+| `hyperframes-media` | TTS voiceover, background music, subtitles, bg removal |
+| `hyperframes-cli` | Dev loop (init / lint / render / publish) |
+| `hyperframes-registry` | Registry component installation |
+| `general-video` | General video workflow routing |
+
+---
+
+## Quick Start
+
+### Option 1: npm One-Click Install (Recommended)
 
 ```bash
 npm install -g cybercode-cli
 ```
 
-安装完成后，在终端输入：
+After installation, type in your terminal:
 
 ```bash
 cybercode web
 ```
 
-终端会显示本地服务地址，浏览器打开即可看到 CyberCode 界面。**无需任何配置**——模型密钥、网关地址、默认参数全部自动就绪，开箱即用。
+The terminal will display the local service address — open it in your browser to see the CyberCode interface. **No configuration needed** — model keys, gateway addresses, and default parameters are all auto-configured out of the box.
 
-### 方式二：克隆仓库安装
+### Option 2: Clone the Repository
 
 ```bash
 git clone https://github.com/ciouskeila-hue/cybercode-cli.git
@@ -181,256 +180,235 @@ cd cybercode-cli
 python python/cybercodewebui.py
 ```
 
-同样无需手动配置，启动后浏览器访问 `http://localhost:18600` 即可。
+Also requires no manual configuration — after launch, visit `http://localhost:18600` in your browser.
 
-### 开始使用
+### Getting Started
 
-打开浏览器后，你会看到一个登录界面。**注册或登录 CyberCode 账号**即可进入主界面——所有模型（GPT-5.5、Claude Opus 4.8、GLM-5.2 等 32+ 前沿模型）立即可用，图片和视频生成功能也已就绪。
+After opening the browser, you'll see a login screen. **Register or log in to your CyberCode account** to enter the main interface — all models (GPT-5.5, Claude Opus 4.8, GLM-5.2, and 32+ frontier models) are immediately available, along with image and video generation.
 
-登录后，默认选中 `free/glm-5.2`（零成本模型），你可以随时在左侧模型选择器中切换到其他模型。直接在输入框输入你的需求，Agent 会自动调用工具完成任务。
+After logging in, `free/glm-5.2` (zero-cost model) is selected by default. You can switch to any other model in the left-side model selector at any time. Just type your request in the input box and the Agent will automatically call tools to complete the task.
 
-> **零配置理念**：CyberCode 在启动时自动完成所有底层配置——模型路由、密钥管理、安全令牌生成全部在后台完成。你作为用户，只需要登录账号，剩下的交给系统。
-
----
-
-## API 接口
-
-CyberCode 暴露一套简洁的 HTTP API，可以集成到其他系统：
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| `GET` | `/` | Web UI 页面 |
-| `GET` | `/api/status` | 运行状态 + 当前模型 |
-| `GET` | `/api/sessions` | 历史会话列表 |
-| `GET` | `/api/skills` | 技能文档列表 |
-| `GET` | `/api/messages?path=` | 回放某次会话 |
-| `GET` | `/api/videos` | 已渲染的 MP4 列表 |
-| `GET` | `/api/video/<relpath>` | 视频流（支持 Range） |
-| `POST` | `/api/chat` | 发送消息，SSE 流式返回 |
-| `POST` | `/api/chat` (video:true) | 视频模式，注入 HyperFrames 前导 |
-| `POST` | `/api/llm` | 切换 LLM |
-| `POST` | `/api/stop` | 中止当前任务 |
-| `POST` | `/api/new` | 开启新会话 |
-| `POST` | `/api/continue` | 恢复历史会话 |
-
-所有 `/api/*` 端点均需 Token 认证（首次启动自动生成 `.auth_token` 文件）。
+> **Zero-config philosophy**: CyberCode handles all underlying configuration at startup — model routing, key management, and token generation all happen in the background. As a user, you just log in and let the system handle the rest.
 
 ---
 
-## 安全设计
+## API Reference
 
-CyberCode 在安全上做了多层防护，确保 Agent 的"物理级权限"不被滥用：
+CyberCode exposes a clean HTTP API for integration with other systems:
 
-- **Token 认证** — 所有 API 端点强制 Bearer Token 校验，首次启动生成随机 48 位 hex token
-- **路径沙箱** — `_get_abs_path` 限制在 ROOT_DIR / TEMP_DIR 内，阻断 `..` 穿越
-- **视频路径白名单** — `/api/video/` 仅允许 `.mp4` / `.webm` / `.mp3`，禁止 `..`
-- **SSRF 阻断** — `web_scan` 屏蔽私有 IP、回环地址、云元数据端点（169.254.169.254）
-- **SSL 强制校验** — 全链路 `verify=True`，绝不关闭证书验证
-- **错误脱敏** — `sanitize_error()` 隐藏上游 URL、API key、IP、内部服务名、traceback
-- **密钥掩码** — `/api/llm/get` 返回的密钥自动掩码（如 `sk-5b8***0b8d`）
-- **Admin Token 环境变量** — 管理员令牌从环境变量读取，不硬编码
-- **无 traceback 返回** — 错误响应只含消息，不含堆栈
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Web UI page |
+| `GET` | `/api/status` | Running status + current model |
+| `GET` | `/api/sessions` | Conversation history list |
+| `GET` | `/api/skills` | Skill document list |
+| `GET` | `/api/messages?path=` | Replay a session |
+| `GET` | `/api/videos` | Rendered MP4 list |
+| `GET` | `/api/video/<relpath>` | Video stream (Range support) |
+| `POST` | `/api/chat` | Send message, SSE streaming response |
+| `POST` | `/api/chat` (video:true) | Video mode, injects HyperFrames preamble |
+| `POST` | `/api/llm` | Switch LLM |
+| `POST` | `/api/stop` | Abort current task |
+| `POST` | `/api/new` | Start new session |
+| `POST` | `/api/continue` | Restore historical session |
 
 ---
 
-## 技术栈与开源致谢
+## Tech Stack & Acknowledgments
 
-CyberCode 的 Agent 核心架构（agent loop 结构、9 工具设计、记忆分层理念、系统 prompt 哲学）源自 **GenericAgent** 项目，由 lsdefine 以 MIT 许可证开源：
+CyberCode's Agent core architecture (agent loop structure, 9-tool design, memory hierarchy philosophy, system prompt approach) is derived from the **GenericAgent** project, open-sourced by lsdefine under the MIT License:
 
 - **GenericAgent** — [github.com/lsdefine/GenericAgent](https://github.com/lsdefine/GenericAgent) © 2025 lsdefine
 
-在此之上，CyberCode 做了以下扩展：
+Built on top of this, CyberCode adds:
 
-- 重写 LLM Client，支持 OpenAI 兼容流式 + 函数调用
-- 实现统一网关代理层（模型路由 + 会话令牌 + 错误脱敏）
-- 集成 HyperFrames 视频引擎（HTML → ffmpeg 管线）
-- 集成 edge-tts 语音合成（自动安装逻辑内置于系统 prompt）
-- 构建 Codex-dark 风格 Web UI（i18n 中英双语）
-- 加入完整安全层（Token / 沙箱 / SSRF / 脱敏）
-- 零配置自动部署（npm 安装后直接 `cybercode web` 启动）
+- Rewritten LLM Client with OpenAI-compatible streaming + function calling
+- Unified gateway proxy layer (model routing + session tokens + error sanitization)
+- HyperFrames video engine integration (HTML → ffmpeg pipeline)
+- edge-tts voice synthesis (auto-install logic built into system prompt)
+- Codex-dark themed Web UI (i18n Chinese/English)
+- Zero-config auto-deployment (`cybercode web` after npm install)
 
-### 依赖
+### Dependencies
 
-| 依赖 | 用途 | 是否必须 |
-|------|------|----------|
-| `requests` | HTTP 请求 | 必须 |
-| `ffmpeg` | 视频合成 | 仅视频模式 |
-| `edge-tts` | 语音合成 | 仅视频旁白 |
-| Python stdlib | 其余一切 | 内置 |
+| Dependency | Purpose | Required? |
+|------------|---------|-----------|
+| `requests` | HTTP requests | Yes |
+| `ffmpeg` | Video compositing | Video mode only |
+| `edge-tts` | Voice synthesis | Video narration only |
+| Python stdlib | Everything else | Built-in |
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```
 cybercode/
-├── agent_core.py            # Agent 核心：LLM Client + 9 工具 + agent loop
-├── cybercodewebui.py        # Web 服务：HTTP API + SSE 流式 + 代理层
-├── cybercodewebui.html      # 前端：Codex-dark UI + i18n + 实时聊天
-├── mykey.json               # 模型配置（自动生成，不入库）
-├── custom_system_prompt.txt # 自定义系统 prompt（热重载）
-├── .auth_token              # 自动生成的安全令牌（不入库）
-├── skills/                  # 14 个技能文档
-│   ├── hyperframes.md       # 视频引擎入口
-│   ├── hyperframes-core.md  # HTML 组合契约
+├── agent_core.py            # Agent core: LLM Client + 9 tools + agent loop
+├── cybercodewebui.py        # Web server: HTTP API + SSE streaming + proxy layer
+├── cybercodewebui.html      # Frontend: Codex-dark UI + i18n + real-time chat
+├── mykey.json               # Model config (auto-generated, not in repo)
+├── custom_system_prompt.txt # Custom system prompt (hot-reload)
+├── .auth_token              # Auto-generated token (not in repo)
+├── skills/                  # 14 skill documents
+│   ├── hyperframes.md       # Video engine entry
+│   ├── hyperframes-core.md  # HTML composition contract
 │   ├── hyperframes-animation.md
 │   ├── hyperframes-creative.md
 │   ├── hyperframes-media.md
 │   ├── hyperframes-cli.md
 │   ├── hyperframes-registry.md
-│   ├── image-gen.md         # 图片生成 API
-│   ├── edge-tts-tts.md      # 语音合成
-│   ├── general-video.md     # 通用视频路由
+│   ├── image-gen.md         # Image generation API
+│   ├── edge-tts-tts.md      # Voice synthesis
+│   ├── general-video.md     # General video routing
 │   ├── motion-graphics.md
 │   ├── product-launch-video.md
 │   ├── website-to-video.md
 │   └── faceless-explainer.md
-├── memory/                  # 三级记忆系统
-│   ├── global_mem.txt       # L2 稳定事实
-│   └── global_mem_insight.txt # L1 洞察索引
-├── temp/                    # 工作目录（gitignore）
+├── memory/                  # 3-level memory system
+│   ├── global_mem.txt       # L2 stable facts
+│   └── global_mem_insight.txt # L1 insight index
+├── temp/                    # Working directory (gitignored)
 ├── docs/
-│   └── images/              # README 演示图片
+│   └── images/              # README demo images
 └── .gitignore
 ```
 
 ---
 
-## 使用示例
+## Usage Examples
 
-### 示例 1：让 Agent 写脚本并执行
+### Example 1: Write and Execute a Script
 
 ```
-用户：帮我写一个 Python 脚本，统计当前目录下所有 .py 文件的行数，并按行数排序输出
+User: Write a Python script that counts lines in all .py files in the current directory, sorted by line count
 
-Agent：
-  → tool_file_write: 写 count_lines.py
+Agent:
+  → tool_file_write: write count_lines.py
   → tool_code_run: python count_lines.py
-  → 返回结果：agent_core.py 1452 行，cybercodewebui.py 1180 行...
-  → tool_file_patch: 发现 bug，修正排序逻辑
-  → tool_code_run: 重跑，结果正确
-  → 总结：共 3 个 Python 文件，总行数 2632
+  → Returns: agent_core.py 1452 lines, cybercodewebui.py 1180 lines...
+  → tool_file_patch: found bug, fixed sorting logic
+  → tool_code_run: re-run, correct results
+  → Summary: 3 Python files, 2632 total lines
 ```
 
-### 示例 2：生成图片并理解内容
+### Example 2: Generate an Image and Understand It
 
 ```
-用户：生成一张赛博朋克风格的猫咪图，然后告诉我图里有什么
+User: Generate a cyberpunk-style cat image, then tell me what's in it
 
-Agent：
+Agent:
   → tool_generate_image: prompt="cyberpunk cat, neon lights, digital art"
-  → 等待异步任务完成，图片保存到 temp/
-  → tool_view_image: 分析生成的图片
-  → 返回：一只橘色猫咪，戴着霓虹护目镜，背景是紫色和青色的城市灯光...
+  → Wait for async task, image saved to temp/
+  → tool_view_image: analyze the generated image
+  → Returns: An orange cat wearing neon goggles, background is purple and cyan city lights...
 ```
 
-### 示例 3：抓取网页并提取信息
+### Example 3: Scrape a Web Page
 
 ```
-用户：帮我看看 python.org 首页有什么新闻
+User: Check what's new on python.org homepage
 
-Agent：
+Agent:
   → tool_web_scan: url="https://python.org", text_only=true
-  → 提取正文，过滤导航和页脚
-  → 返回：Python 3.13 发布、PEP 7xx 新提案、PyCon 2026 日期公布...
+  → Extract body text, filter navigation and footer
+  → Returns: Python 3.13 released, PEP 7xx new proposal, PyCon 2026 dates announced...
 ```
 
-### 示例 4：生成带旁白的视频
+### Example 4: Generate a Video with Narration
 
 ```
-用户：做一个 10 秒的猫咪科普短视频，要有中文旁白
+User: Make a 10-second cat science video with Chinese narration
 
-Agent（视频模式，自动注入 HyperFrames 前导）：
-  → 生成 3 张场景图（gpt-image-2）
-  → 合成中文旁白 MP3（edge-tts）
-  → 编写 HTML 组合（GSAP 时间轴 + 淡入淡出 + data-start 音频同步）
-  → ffmpeg 合成 H.264 1920x1080 + AAC
-  → 自检：时长 10s ✓ 分辨率 1080p ✓ 音频存在 ✓
-  → 输出：cat_video_final.mp4
+Agent (video mode, auto-injects HyperFrames preamble):
+  → Generate 3 scene images (gpt-image-2)
+  → Synthesize narration MP3 (edge-tts)
+  → Write HTML composition (GSAP timeline + fade in/out + data-start audio sync)
+  → ffmpeg composites H.264 1920x1080 + AAC
+  → Self-check: 10s duration ✓ 1080p ✓ audio present ✓
+  → Output: cat_video_final.mp4
 ```
 
 ---
 
-## 配置项
+## Configuration
 
-CyberCode 采用零配置设计，启动时自动完成所有配置。以下环境变量供高级用户调整：
+CyberCode uses a zero-config design — all configuration is automatic at startup. The following environment variables are available for advanced users:
 
-### 环境变量
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CYBERCODE_PORT` | `18600` | Web service port |
+| `CYBERCODE_HOST` | `127.0.0.1` | Listen address |
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `CYBERCODE_PORT` | `18600` | Web 服务端口 |
-| `CYBERCODE_HOST` | `127.0.0.1` | 监听地址 |
+### Auto-Configuration
 
-### 自动配置机制
+CyberCode automatically handles the following at first launch — no user intervention needed:
 
-CyberCode 在首次启动时自动完成以下工作，用户无需干预：
+- Connects to the model gateway and fetches the available model list
+- Generates a session token (`.auth_token`)
+- Selects the default model (`free/glm-5.2`, zero cost)
+- Initializes the memory system and working directory
 
-- 连接模型网关，获取可用模型列表
-- 生成会话安全令牌（`.auth_token`）
-- 选择默认模型（`free/glm-5.2`，零成本）
-- 初始化记忆系统和工作目录
-
-用户只需登录 CyberCode 账号，系统自动处理其余一切。
+Users only need to log in to their CyberCode account — the system handles everything else.
 
 ---
 
-## 常见问题
+## FAQ
 
-**Q：真的免费吗？**
+**Q: Is it really free?**
 
-是的。CyberCode 默认使用 `free/glm-5.2` 模型，完全免费。登录 CyberCode 账号后，GPT-5.5、Claude Opus 4.8 等前沿模型也可直接使用，具体额度取决于平台政策。
+Yes. CyberCode defaults to the `free/glm-5.2` model, which is completely free. After logging in to your CyberCode account, frontier models like GPT-5.5 and Claude Opus 4.8 are also available — specific quotas depend on platform policy.
 
-**Q：需要翻墙吗？**
+**Q: Do I need a VPN?**
 
-不需要。模型网关在国内可直连，开箱即用。
+No. The model gateway is directly accessible — works out of the box.
 
-**Q：支持函数调用吗？**
+**Q: Does it support function calling?**
 
-支持。`free/glm-5.2`、`deepseek-v4-flash`、`glm-5.2` 等模型支持 OpenAI tools 规范的 function calling，流式与非流式均可。`gpt-5.4` 等部分模型不支持 FC，此时 Agent 回退到 XML 工具调用解析。
+Yes. `free/glm-5.2`, `deepseek-v4-flash`, `glm-5.2` and other models support OpenAI tools-compatible function calling, both streaming and non-streaming. Some models like `gpt-5.4` don't support FC — in that case, the Agent falls back to XML tool-call parsing.
 
-**Q：视频生成需要什么依赖？**
+**Q: What dependencies does video generation need?**
 
-需要 `ffmpeg`（系统 PATH 中可用）和 `edge-tts`（`pip install edge-tts`）。系统 prompt 内置了 edge-tts 自动安装逻辑，首次使用视频模式时 Agent 会自动检测并安装。
+`ffmpeg` (available in system PATH) and `edge-tts` (`pip install edge-tts`). The system prompt has built-in edge-tts auto-install logic — the Agent will detect and install it automatically on first use of video mode.
 
-**Q：数据会上传吗？**
+**Q: Is my data uploaded?**
 
-不会。CyberCode 跑在你本地，所有文件操作、代码执行、记忆存储都在本地磁盘。只有 LLM 推理请求会发送到模型网关，且错误日志经过脱敏，不暴露你的文件路径或敏感数据。
+No. CyberCode runs locally — all file operations, code execution, and memory storage stay on your local disk. Only LLM inference requests are sent to the model gateway, and error logs are sanitized to never expose your file paths or sensitive data.
 
 ---
 
-## 开发
+## Development
 
-### 本地调试
+### Local Debugging
 
 ```bash
-# 克隆仓库后直接运行
+# Clone and run directly
 python python/cybercodewebui.py --port 18600 --host 0.0.0.0
 
-# 自定义 LLM 启动序号
+# Start with a specific LLM index
 python python/cybercodewebui.py --llm_no 4
 ```
 
-### 自定义系统 Prompt
+### Custom System Prompt
 
-编辑 `custom_system_prompt.txt`，内容会热重载到每次对话的系统 prompt 开头。适合注入项目特定的约束或领域知识。
+Edit `custom_system_prompt.txt` — content is hot-reloaded into the system prompt of every conversation. Ideal for injecting project-specific constraints or domain knowledge.
 
-### 自定义技能
+### Custom Skills
 
-在 `skills/` 目录下新建 `.md` 文件，Agent 会在 `/api/skills` 中列出并按需加载。
+Create `.md` files in the `skills/` directory — the Agent will list them in `/api/skills` and load them on demand.
 
 ---
 
-## 许可证
+## License
 
-MIT License — 详见 [LICENSE](LICENSE) 文件。
+MIT License — see [LICENSE](LICENSE) for details.
 
-CyberCode 的 Agent 核心架构源自 [GenericAgent](https://github.com/lsdefine/GenericAgent)（© 2025 lsdefine, MIT），在此致谢。
+CyberCode's Agent core architecture is derived from [GenericAgent](https://github.com/lsdefine/GenericAgent) (© 2025 lsdefine, MIT). Acknowledgments.
 
 ---
 
 <div align="center">
 
-**CyberCode — 让前沿大模型真正动手干活。**
+**CyberCode — Let frontier LLMs actually get things done.**
 
 </div>
