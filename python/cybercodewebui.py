@@ -1183,11 +1183,11 @@ def main():
     parser = argparse.ArgumentParser(description="cybercodewebui — self-contained Codex-dark agent web UI")
     parser.add_argument("--host", default=DEFAULT_HOST)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
-    parser.add_argument("--llm_no", type=int, default=0, help="LLM index to start on")
+    parser.add_argument("--llm_no", type=int, default=-1, help="LLM index to start on (-1 = use agent default)")
     args = parser.parse_args()
 
     agent = get_agent()
-    if agent.llmclient is not None:
+    if args.llm_no >= 0 and agent.llmclient is not None:
         try:
             agent.next_llm(args.llm_no)
         except Exception as e:
