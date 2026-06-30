@@ -3,7 +3,7 @@
 // Supports: npm install -g cybercode-cli && cybercode
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, writeFileSync, readFileSync, unlinkSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { homedir, platform } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -43,6 +43,7 @@ function splitCommand(argv) {
   if (argv[0] === "webui") return { command: "webui", args: argv.slice(1) };
   if (argv[0] === "update") return { command: "update", args: argv.slice(1) };
   if (argv[0] === "doctor") return { command: "doctor", args: argv.slice(1) };
+  if (argv[0] === "logout") return { command: "logout", args: argv.slice(1) };
   return { command: "webui", args: argv };
 }
 
@@ -81,6 +82,7 @@ ${c("bold", "USAGE")}
   ${c("cyan", "cybercode")} webui --llm 1                  # start on 2nd configured LLM
   ${c("cyan", "cybercode")} update                         # check & install latest version
   ${c("cyan", "cybercode")} doctor                         # run diagnostics
+  ${c("cyan", "cybercode")} logout                         # log out and clear all credentials
 
 ${c("bold", "OPTIONS")}
   -p, --port <num>     Port (default: auto-find free port near 18600)
@@ -376,6 +378,41 @@ async function launchWebUI(rawArgv) {
   process.on("SIGTERM", () => { child.kill("SIGTERM"); process.exit(0); });
 }
 
+// ---- Logout ----
+async function runLogout() {
+  const workDir = join(homedir(), ".cybercode");
+  let cleared = 0;
+  const removed = [];
+
+  const authToken = join(workDir, ".auth_token");
+  if (existsSync(authToken)) { unlinkSync(authToken); cleared++; removed.push(".auth_token"); }
+
+  const mykeyPath = join(workDir, "mykey.json");
+  if (existsSync(mykeyPath)) { unlinkSync(mykeyPath); cleared++; removed.push("mykey.json"); }
+
+  const mykeyPyPath = join(workDir, "mykey.py");
+  if (existsSync(mykeyPyPath)) { unlinkSync(mykeyPyPath); cleared++; removed.push("mykey.py"); }
+
+  const promptPath = join(workDir, "custom_system_prompt.txt");
+  if (existsSync(promptPath)) { unlinkSync(promptPath); cleared++; removed.push("custom_system_prompt.txt"); }
+
+  try {
+    if (platform() === "win32") {
+      spawnSync("taskkill", ["/F", "/FI", "WINDOWTITLE eq *cybercode*"], { stdio: "ignore", shell: true });
+    } else {
+      spawnSync("pkill", ["-f", "cybercodewebui.py"], { stdio: "ignore" });
+    }
+  } catch {}
+
+  if (cleared > 0) {
+    console.log(c("green", `\n  ✓ Logged out successfully. Cleared ${cleared} file(s).`));
+    console.log(c("dim", `  Removed: ${removed.join(", ")}`));
+    console.log(c("dim", `  Next run: ${c("cyan", "cybercode web")} will start fresh.\n`));
+  } else {
+    console.log(c("yellow", `\n  ○ No active session found. Already logged out.\n`));
+  }
+}
+
 const argv = process.argv.slice(2);
 const { command, args } = splitCommand(argv);
 if (command === "webui") {
@@ -384,6 +421,8 @@ if (command === "webui") {
   selfUpdate().catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
 } else if (command === "doctor") {
   runDoctor().catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
+} else if (command === "logout") {
+  runLogout();
 } else {
   showHelp();
 }

@@ -1329,17 +1329,110 @@ class Agent:
             except Exception as e:
                 print(f"[agent_core] Failed to init LLM '{k}': {e}")
         if self._llm_clients:
-            # Default to free/glm-5.2 if available (l0veyou free tier, no cost)
+            # Auto-discover models from l0veyou gateway if we have a valid session key
+            self._auto_discover_models()
+
+            # Default to deepseek-v4-flash if available
             default_idx = 0
             for i, cfg in enumerate(self._llm_configs):
-                model = cfg.get("model", "")
-                if model.startswith("free/glm") or model == "free/glm-5.2":
+                model = cfg.get("model", "").lower()
+                if "deepseek-v4-flash" in model:
                     default_idx = i
                     break
             self.llm_no = default_idx
             self.llmclient = self._llm_clients[default_idx]
             if default_idx > 0:
                 print(f"[agent_core] Default LLM set to: {self._llm_names[default_idx]} ({self._llm_configs[default_idx].get('model', '')})")
+
+
+    def _auto_discover_models(self):
+        """Auto-discover available models from l0veyou gateway and merge into mykey.json."""
+        try:
+            import requests as _req
+            # Find a l0veyou config with a valid session key
+            l0_cfg = None
+            for cfg in self._llm_configs:
+                apibase = cfg.get("apibase", "").lower()
+                if "l0veyou" in apibase and cfg.get("apikey", "").startswith("sess-"):
+                    l0_cfg = cfg
+                    break
+            if not l0_cfg:
+                return  # No l0veyou session key, skip discovery
+
+            base = l0_cfg["apibase"].rstrip("/").replace("/v1", "")
+            apikey = l0_cfg["apikey"]
+            url = base + "/v1/models"
+            r = _req.get(url, headers={"Authorization": f"Bearer {apikey}"}, timeout=10)
+            if r.status_code != 200:
+                return
+            models = r.json().get("data", [])
+            if not models:
+                return
+
+            # Build set of existing model names (lowercase for comparison)
+            existing = set()
+            for cfg in self._llm_configs:
+                existing.add(cfg.get("model", "").lower())
+
+            # Define display names for known models
+            name_map = {
+                "gpt-5.5": "GPT-5.5",
+                "gpt-5.4": "GPT-5.4",
+                "gpt-5-mini": "GPT-5 Mini",
+                "claude-opus-4-8": "Claude Opus 4.8",
+                "claude-opus-4-7": "Claude Opus 4.7",
+                "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
+                "gemini-3.5-flash": "Gemini 3.5 Flash",
+                "deepseek-v4-flash": "DeepSeek V4 Flash",
+                "deepseek-v4-pro": "DeepSeek V4 Pro",
+                "deepseek-r1-14b": "DeepSeek R1",
+                "glm-5.2": "GLM-5.2",
+                "glm-5.1": "GLM-5.1",
+                "kimi-k2.7": "Kimi K2.7",
+                "minimax-m3": "MiniMax M3",
+                "mistral-small-24b": "Mistral Small",
+                "qwen-2.5-coder-14b": "Qwen Coder",
+                "llama-3.1-8b": "Llama 3.1",
+            }
+
+            added = 0
+            for m in models:
+                model_id = m.get("id", "")
+                # l0veyou returns "Free/model-name" prefix; strip it for the model field
+                # but keep the original for API calls
+                clean_model = model_id
+                if clean_model.startswith("Free/"):
+                    clean_model = clean_model[5:]  # Remove "Free/" prefix
+
+                if clean_model.lower() in existing:
+                    continue  # Already configured
+
+                # Generate display name
+                display_name = name_map.get(clean_model.lower(), clean_model)
+
+                new_cfg = {
+                    "name": display_name,
+                    "model": clean_model,
+                    "apibase": base + "/v1",
+                    "apikey": apikey,
+                    "remark": "auto-discovered",
+                }
+                try:
+                    client = LLMClient(new_cfg)
+                    self._llm_clients.append(client)
+                    self._llm_names.append(display_name)
+                    self._llm_configs.append(new_cfg)
+                    existing.add(clean_model.lower())
+                    added += 1
+                except Exception:
+                    pass
+
+            if added > 0:
+                print(f"[agent_core] Auto-discovered {added} models from gateway")
+                self._save_mykeys()
+        except Exception as e:
+            # Silent fail - auto-discovery is best-effort
+            pass
 
     def _mykey_path(self):
         """Return the path to mykey.json (create location if not exists)."""
