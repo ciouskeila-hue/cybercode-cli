@@ -3,7 +3,7 @@
 // Supports: npm install -g cybercode-cli && cybercode
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, writeFileSync, readFileSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, writeFileSync, readFileSync, unlinkSync, rmSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { homedir, platform } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -383,30 +383,70 @@ async function runLogout() {
   const workDir = join(homedir(), ".cybercode");
   let cleared = 0;
   const removed = [];
+  let killedProcs = 0;
 
-  const authToken = join(workDir, ".auth_token");
-  if (existsSync(authToken)) { unlinkSync(authToken); cleared++; removed.push(".auth_token"); }
-
-  const mykeyPath = join(workDir, "mykey.json");
-  if (existsSync(mykeyPath)) { unlinkSync(mykeyPath); cleared++; removed.push("mykey.json"); }
-
-  const mykeyPyPath = join(workDir, "mykey.py");
-  if (existsSync(mykeyPyPath)) { unlinkSync(mykeyPyPath); cleared++; removed.push("mykey.py"); }
-
-  const promptPath = join(workDir, "custom_system_prompt.txt");
-  if (existsSync(promptPath)) { unlinkSync(promptPath); cleared++; removed.push("custom_system_prompt.txt"); }
-
+  // 1. Kill any running cybercodewebui.py process
   try {
     if (platform() === "win32") {
-      spawnSync("taskkill", ["/F", "/FI", "WINDOWTITLE eq *cybercode*"], { stdio: "ignore", shell: true });
+      // Find PIDs running cybercodewebui.py
+      const out = spawnSync("wmic", ["process", "where", "name='python.exe'", "get", "processid,commandline"], { encoding: "utf-8", shell: true });
+      const lines = (out.stdout || "").split("\n");
+      for (const line of lines) {
+        if (line.toLowerCase().includes("cybercodewebui")) {
+          const pid = line.trim().split(/\s+/).pop();
+          if (pid && /^\d+$/.test(pid)) {
+            spawnSync("taskkill", ["/F", "/PID", pid], { stdio: "ignore", shell: true });
+            killedProcs++;
+          }
+        }
+      }
+      // Also kill python3.exe
+      const out2 = spawnSync("wmic", ["process", "where", "name='python3.exe'", "get", "processid,commandline"], { encoding: "utf-8", shell: true });
+      const lines2 = (out2.stdout || "").split("\n");
+      for (const line of lines2) {
+        if (line.toLowerCase().includes("cybercodewebui")) {
+          const pid = line.trim().split(/\s+/).pop();
+          if (pid && /^\d+$/.test(pid)) {
+            spawnSync("taskkill", ["/F", "/PID", pid], { stdio: "ignore", shell: true });
+            killedProcs++;
+          }
+        }
+      }
     } else {
-      spawnSync("pkill", ["-f", "cybercodewebui.py"], { stdio: "ignore" });
+      const out = spawnSync("pgrep", ["-f", "cybercodewebui.py"], { encoding: "utf-8" });
+      const pids = (out.stdout || "").trim().split("\n").filter(Boolean);
+      for (const pid of pids) {
+        spawnSync("kill", ["-9", pid], { stdio: "ignore" });
+        killedProcs++;
+      }
     }
   } catch {}
 
-  if (cleared > 0) {
-    console.log(c("green", `\n  ✓ Logged out successfully. Cleared ${cleared} file(s).`));
-    console.log(c("dim", `  Removed: ${removed.join(", ")}`));
+  // 2. Remove credential files
+  const authToken = join(workDir, ".auth_token");
+  if (existsSync(authToken)) { try { unlinkSync(authToken); cleared++; removed.push(".auth_token"); } catch {} }
+
+  const mykeyPath = join(workDir, "mykey.json");
+  if (existsSync(mykeyPath)) { try { unlinkSync(mykeyPath); cleared++; removed.push("mykey.json"); } catch {} }
+
+  const mykeyPyPath = join(workDir, "mykey.py");
+  if (existsSync(mykeyPyPath)) { try { unlinkSync(mykeyPyPath); cleared++; removed.push("mykey.py"); } catch {} }
+
+  const promptPath = join(workDir, "custom_system_prompt.txt");
+  if (existsSync(promptPath)) { try { unlinkSync(promptPath); cleared++; removed.push("custom_system_prompt.txt"); } catch {} }
+
+  // 3. Remove __pycache__ to force recompile on next start
+  const pycache = join(workDir, "__pycache__");
+  if (existsSync(pycache)) { try { rmSync(pycache, { recursive: true, force: true }); } catch {} }
+
+  if (cleared > 0 || killedProcs > 0) {
+    console.log(c("green", `\n  ✓ Logged out successfully.`));
+    if (cleared > 0) {
+      console.log(c("dim", `  Removed: ${removed.join(", ")}`));
+    }
+    if (killedProcs > 0) {
+      console.log(c("dim", `  Stopped ${killedProcs} running process(es)`));
+    }
     console.log(c("dim", `  Next run: ${c("cyan", "cybercode web")} will start fresh.\n`));
   } else {
     console.log(c("yellow", `\n  ○ No active session found. Already logged out.\n`));

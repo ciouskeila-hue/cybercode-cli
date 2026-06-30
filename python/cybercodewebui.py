@@ -516,6 +516,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path
         try:
+            # Allow logout without auth (user may be clearing stale session)
+            if path == "/api/auth/logout":
+                return self._api_auth_logout()
             if not _check_auth(self):
                 return self._send_json({"error": "unauthorized"}, 401)
             if path == "/api/chat":
@@ -544,6 +547,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._proxy_post("/auth/login")
             if path == "/proxy/auth/logout":
                 return self._proxy_post("/auth/logout")
+            if path == "/api/auth/logout":
+                return self._api_auth_logout()
             if path == "/proxy/auth/register":
                 return self._proxy_post("/auth/register")
             if path == "/proxy/v1/chat/completions":
@@ -869,6 +874,45 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"object": "list", "data": []}, 200)
             else:
                 self._send_json({"error": {"message": "当前用户较多，请稍后再试", "type": "server_busy"}}, 200)
+
+    def _api_auth_logout(self):
+        """Logout: clear local credentials and reset agent state."""
+        global _agent
+        try:
+            with _agent_lock:
+                if _agent is not None:
+                    _agent.history = []
+                    if _agent.handler:
+                        _agent.handler.working = {}
+                    _agent = None
+
+            import os as _os
+            files_to_remove = [
+                _os.path.join(SCRIPT_DIR, ".auth_token"),
+                _os.path.join(SCRIPT_DIR, "mykey.json"),
+                _os.path.join(SCRIPT_DIR, "mykey.py"),
+                _os.path.join(SCRIPT_DIR, "custom_system_prompt.txt"),
+            ]
+            removed = []
+            for fpath in files_to_remove:
+                if _os.path.exists(fpath):
+                    try:
+                        _os.remove(fpath)
+                        removed.append(_os.path.basename(fpath))
+                    except Exception:
+                        pass
+
+            pycache = _os.path.join(SCRIPT_DIR, "__pycache__")
+            if _os.path.isdir(pycache):
+                import shutil as _shutil
+                try:
+                    _shutil.rmtree(pycache, ignore_errors=True)
+                except Exception:
+                    pass
+
+            return self._send_json({"ok": True, "removed": removed})
+        except Exception as e:
+            return self._send_json({"error": sanitize_error(str(e))}, 500)
 
     def _proxy_post(self, l0veyou_path):
         """Proxy a POST request to l0veyou. Auth errors preserved, network errors sanitized."""
