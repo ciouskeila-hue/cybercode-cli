@@ -356,31 +356,17 @@ async function launchWebUI(rawArgv) {
   const port = args.port || findFreePort(18600, python);
   const url = `http://${args.host}:${port}`;
 
-  // ASCII art logo - "cybercode" in clean figlet style
+  // Simple plain-text logo
   const cyan = COLORS.cyan, blue = COLORS.blue, green = COLORS.green, dim = COLORS.dim, bold = COLORS.bold, yellow = COLORS.yellow, red = COLORS.red, reset = COLORS.reset;
 
-  const logo = [
-    `  ${cyan}  _           _                 ___           _   ${reset}`,
-    `  ${cyan} | |         | |               / _ \\         | |  ${reset}`,
-    `  ${cyan} | |__   __ _| | _____  _   _ | (_) | ___  __| |_ ${reset}`,
-    `  ${cyan} | '_ \\ / _\` | |/ / _ \\| | | | > _ < / _ \\/ _\` __|${reset}`,
-    `  ${cyan} | |_) | (_| |   < (_) | |_| | (_) | (_) | (_| | ${reset}`,
-    `  ${cyan} |_.__/ \\__,_|_|\\_\\___/ \\__, |\\____/ \\___/ \\__,_| ${reset}`,
-    `  ${cyan}                           __/ |                 ${reset}`,
-    `  ${cyan}                          |___/                  ${reset}`,
-  ];
-
-  console.log();
-  for (const l of logo) console.log(l);
-  console.log();
-
-  // Login status banner
   const line = `  ${blue}+---------------------------------------+${reset}`;
   const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
 
+  console.log();
+  console.log(`  ${bold}${cyan}cybercode${reset} ${dim}v${currentVersion}${reset}`);
+  console.log();
   console.log(line);
-  console.log(`  ${blue}|${reset}  ${bold}cybercode${reset} ${dim}v${currentVersion}${reset}${pad("", 25 - currentVersion.length)}${blue}|${reset}`);
-  console.log(`  ${blue}|${reset}  ${dim}${pad("working dir:", 36)}${blue}|${reset}`);
+  console.log(`  ${blue}|${reset}  ${dim}working dir:${reset}${pad("", 23)}${blue}|${reset}`);
   console.log(`  ${blue}|${reset}    ${dim}${pad(workDir, 34)}${blue}|${reset}`);
   console.log(`  ${blue}|${reset}  ${green}> ${url}${reset}${pad("", 35 - url.length)}${blue}|${reset}`);
   if (configured) {
@@ -392,8 +378,11 @@ async function launchWebUI(rawArgv) {
   console.log();
 
   if (!configured) {
-    console.log(c("yellow", `  Not logged in. Open the URL above to sign in.`));
+    console.log(c("yellow", `  Not logged in. Opening browser to sign in...`));
     console.log(c("dim", `  Login with GitHub or LinuxDo to get started.`));
+    console.log();
+  } else {
+    console.log(c("green", `  Opening browser...`));
     console.log();
   }
 
@@ -406,8 +395,10 @@ async function launchWebUI(rawArgv) {
   child.on("exit", (code) => process.exit(code || 0));
 
   if (!args.noBrowser) {
-    try { await waitForServer(`${url}/api/status`, 40); openBrowser(url); }
-    catch { console.log(c("dim", `  (browser auto-open skipped -- open ${url} manually)`)); }
+    // Always open browser, regardless of whether server is ready
+    try { await waitForServer(`${url}/api/status`, 40); }
+    catch { console.log(c("dim", `  (server still starting, opening browser anyway)`)); }
+    openBrowser(url);
   }
 
   process.on("SIGINT", () => { child.kill("SIGINT"); process.exit(0); });
