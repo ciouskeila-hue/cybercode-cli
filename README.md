@@ -184,11 +184,14 @@ Also requires no manual configuration — after launch, visit `http://localhost:
 
 ### Getting Started
 
-After opening the browser, you'll see a login screen. **Register or log in to your CyberCode account** to enter the main interface — all models (GPT-5.5, Claude Opus 4.8, GLM-5.2, and 32+ frontier models) are immediately available, along with image and video generation.
+After opening the browser, you'll see a login screen. You have two options:
+
+- **Log in to your CyberCode account**: all models (GPT-5.5, Claude Opus 4.8, GLM-5.2, and 32+ frontier models) are immediately available, along with image and video generation. GitHub / LinuxDo one-click login supported.
+- **Skip login**: click the "Skip login" link at the bottom to use your own API key. No platform models will be scanned — you'll need to manually add models in Settings (API base URL, model name, API key).
 
 After logging in, `free/glm-5.2` (zero-cost model) is selected by default. You can switch to any other model in the left-side model selector at any time. Just type your request in the input box and the Agent will automatically call tools to complete the task.
 
-> **Zero-config philosophy**: CyberCode handles all underlying configuration at startup — model routing, key management, and token generation all happen in the background. As a user, you just log in and let the system handle the rest.
+> **Zero-config philosophy**: CyberCode handles all underlying configuration at startup — model routing, key management, and token generation all happen in the background. As a user, you just log in (or skip login and configure your own models), and let the system handle the rest.
 
 ---
 
@@ -349,7 +352,7 @@ CyberCode automatically handles the following at first launch — no user interv
 - Selects the default model (`free/glm-5.2`, zero cost)
 - Initializes the memory system and working directory
 
-Users only need to log in to their CyberCode account — the system handles everything else.
+Users only need to log in to their CyberCode account (or skip login and configure their own models) — the system handles everything else.
 
 ---
 
@@ -357,7 +360,7 @@ Users only need to log in to their CyberCode account — the system handles ever
 
 **Q: Is it really free?**
 
-Yes. CyberCode defaults to the `free/glm-5.2` model, which is completely free. After logging in to your CyberCode account, frontier models like GPT-5.5 and Claude Opus 4.8 are also available — specific quotas depend on platform policy.
+Yes. CyberCode defaults to the `free/glm-5.2` model, which is completely free. After logging in to your CyberCode account, frontier models like GPT-5.5 and Claude Opus 4.8 are also available — specific quotas depend on platform policy. You can also skip login and use your own API key.
 
 **Q: Do I need a VPN?**
 
