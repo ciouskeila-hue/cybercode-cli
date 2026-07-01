@@ -49,7 +49,7 @@ function splitCommand(argv) {
 
 // ---- Parse CLI args ----
 function parseArgs(rawArgv) {
-  const args = { port: null, host: "127.0.0.1", dir: null, noBrowser: false, llm: 0, help: false, version: false };
+  const args = { port: null, host: "127.0.0.1", dir: null, noBrowser: false, llm: -1, help: false, version: false };
   const argv = rawArgv.slice();
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -88,7 +88,7 @@ ${c("bold", "OPTIONS")}
   -p, --port <num>     Port (default: auto-find free port near 18600)
   --host <addr>        Bind address (default: 127.0.0.1)
   --dir <path>         Working directory (default: ~/.cybercode)
-  --llm <num>          LLM index to start with (default: 0)
+  --llm <num>          LLM index to start with (default: -1 = auto)
   --no-browser         Don't auto-open the browser
   -h, --help           Show this help
   -V, --version        Show version
@@ -159,7 +159,7 @@ async function runDoctor() {
   if (python) {
     console.log(c("green", `  ✓ Python: ${python}`));
   } else {
-    console.log(c("red", `  ✗ Python 3.11+ not found`));
+    console.log(c("red", `  ✗ Python 3.8+ not found`));
     allOk = false;
   }
 
@@ -205,11 +205,11 @@ async function runDoctor() {
   process.exit(0);
 }
 
-// ---- Find Python 3.11+ ----
+// ---- Find Python 3.8+ ----
 function findPython(quiet) {
   const candidates = process.env.CYBERCODE_PYTHON
     ? [process.env.CYBERCODE_PYTHON]
-    : ["python3", "python3.12", "python3.11", "python"];
+    : ["python3", "python3.12", "python3.11", "python3.10", "python3.9", "python3.8", "python"];
 
   for (const cmd of candidates) {
     try {
@@ -219,14 +219,14 @@ function findPython(quiet) {
       if (match) {
         const major = parseInt(match[1], 10);
         const minor = parseInt(match[2], 10);
-        if (major > 3 || (major === 3 && minor >= 11)) return cmd;
+        if (major > 3 || (major === 3 && minor >= 8)) return cmd;
       }
     } catch {}
   }
 
   if (!quiet) {
-    console.error(c("red", "✗ Python 3.11+ not found."));
-    console.error(c("dim", "  Install Python 3.11 or 3.12, or set CYBERCODE_PYTHON env var."));
+    console.error(c("red", "✗ Python 3.8+ not found."));
+    console.error(c("dim", "  Install Python 3.8+, or set CYBERCODE_PYTHON env var."));
     console.error(c("dim", "  Download: https://www.python.org/downloads/"));
     process.exit(1);
   }
@@ -234,11 +234,11 @@ function findPython(quiet) {
 }
 
 // ---- Find a free port ----
-function findFreePort(preferred) {
+function findFreePort(preferred, python) {
   const start = preferred || 18600;
   for (let port = start; port <= start + 100; port++) {
     try {
-      const result = spawnSync("python3", ["-c", `import socket; s=socket.socket(); s.bind(("127.0.0.1",${port})); s.close(); print(${port})`], { encoding: "utf-8", timeout: 3000 });
+      const result = spawnSync(python || "python", ["-c", `import socket; s=socket.socket(); s.bind(("127.0.0.1",${port})); s.close(); print(${port})`], { encoding: "utf-8", timeout: 3000 });
       if (result.stdout && result.stdout.trim()) return parseInt(result.stdout.trim(), 10);
     } catch {}
   }
@@ -343,7 +343,7 @@ async function launchWebUI(rawArgv) {
   } catch {}
 
   ensureRequests(python);
-  const port = args.port || findFreePort(18600);
+  const port = args.port || findFreePort(18600, python);
   const url = `http://${args.host}:${port}`;
 
   console.log();
@@ -362,7 +362,8 @@ async function launchWebUI(rawArgv) {
     console.log();
   }
 
-  const pyArgs = [join(workDir, "cybercodewebui.py"), "--port", String(port), "--host", args.host, "--llm_no", String(args.llm)];
+  const pyArgs = [join(workDir, "cybercodewebui.py"), "--port", String(port), "--host", args.host];
+  if (args.llm >= 0) pyArgs.push("--llm_no", String(args.llm));
   const child = spawn(python, pyArgs, { cwd: workDir, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PYTHONUNBUFFERED: "1" } });
   child.stdout.on("data", (data) => process.stdout.write(data));
   child.stderr.on("data", (data) => process.stderr.write(c("dim", data.toString())));
