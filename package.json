@@ -1,6 +1,6 @@
 {
   "name": "cybercode-cli",
-  "version": "1.4.16",
+  "version": "1.4.17",
   "description": "Codex-dark web UI with a built-in self-evolving agent. Free GPT-5.5, Claude Opus 4.8, GLM-5.2 + image/video generation.",
   "type": "module",
   "main": "bin/cli.mjs",

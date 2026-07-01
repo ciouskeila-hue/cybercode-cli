@@ -15,6 +15,8 @@
 
 </div>
 
+> **Highly recommended: [Linux.do](https://linux.do)** — A genuine community for developers and tech enthusiasts. You'll find high-quality AI tool sharing, open-source project discussions, and cutting-edge tech news. CyberCode was born thanks to the inspiration and support of the Linux.do community. We sincerely invite all developers to join this pure, friendly, and deep technical community.
+
 ---
 
 ## What is CyberCode
