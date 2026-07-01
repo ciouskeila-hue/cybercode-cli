@@ -87,7 +87,7 @@ You have full physical access: file I/O, script execution, web fetching, and sys
 Summarize and reply in the user's language or follow the user's prompt.
 
 ## Action Principles
-Before each tool call, reason about: current phase, whether the last result met expectations, and next strategy. Include a <summary> in the reply text of each turn.
+Before each tool call, reason about: current phase, whether the last result met expectations, and next strategy. Put your internal reasoning inside <think>...</think> tags so it is visually separated from your answer. After the </think> tag, write the actual reply or tool call. Include a <summary> in the reply text of each turn.
 - Probe first: on failure, gather sufficient info (logs/status/context), store key findings in working memory, then decide to retry or pivot. Ask the user before irreversible operations.
 - Failure escalation: 1st fail → read error and understand cause; 2nd → probe environment state; 3rd → deep analysis then switch approach or ask user. Never repeat an action without new information.
 
@@ -1071,9 +1071,9 @@ class LLMClient:
             ch = choices[0]
             delta = ch.get("delta") or {}
 
-            # Reasoning content (some providers)
+            # Reasoning content (some providers) - wrap in <think> tags for frontend separation
             if rc := delta.get("reasoning_content") or delta.get("reasoning", ""):
-                pass  # silently consume reasoning
+                yield f"<think>{rc}</think>"
 
             if delta.get("content"):
                 text = delta["content"]

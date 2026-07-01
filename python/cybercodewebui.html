@@ -128,6 +128,12 @@
       .turn-chip .tri { font-size: 9px; transition: transform .15s; } .turn-chip.open .tri { transform: rotate(90deg); }
       .turn-body { margin-top: 6px; }
       .turn.collapsed .turn-body { display: none; }
+      .think-box { margin: 6px 0; border-left: 3px solid rgba(138,180,255,.4); }
+      .think-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(138,180,255,.8); background: rgba(138,180,255,.08); border: 1px solid rgba(138,180,255,.15); border-radius: 8px; padding: 4px 9px; cursor: pointer; user-select: none; }
+      .think-chip:hover { background: rgba(138,180,255,.15); }
+      .think-chip .tri { font-size: 9px; transition: transform .15s; } .think-chip.open .tri { transform: rotate(90deg); }
+      .think-body { margin-top: 6px; padding: 8px 12px; font-size: 13px; color: rgba(255,255,255,.55); background: rgba(138,180,255,.04); border-radius: 0 8px 8px 0; }
+      .think-box.collapsed .think-body { display: none; }
       .tool-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #c9d4ff; background: rgba(107,140,255,.14); border: 1px solid rgba(107,140,255,.22); border-radius: 7px; padding: 3px 8px; margin: 4px 0; }
       .file-ref { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #8fd0a8; background: rgba(143,208,168,.1); border: 1px solid rgba(143,208,168,.2); border-radius: 6px; padding: 2px 7px; cursor: pointer; }
       .file-ref:hover { background: rgba(143,208,168,.18); }
@@ -785,7 +791,7 @@
         "msg.delete_failed": "Delete failed: ", "msg.model_deleted": "Model deleted",
         "msg.switch_failed": "LLM switch failed: ", "msg.llm_switched": "LLM \u2192 ",
         "msg.setup_banner": '⚠️ LLM not configured. Click the "Model" button in the top-right to add your API config.',
-        "msg.summary": "summary", "msg.readonly": "read-only", "msg.protected": "Protected model - editing disabled", "msg.model_set": "Model: ",
+        "msg.summary": "summary", "msg.readonly": "read-only", "msg.protected": "Protected model - editing disabled", "msg.model_set": "Model: ", "msg.thinking": "Thinking",
         "login.signin": "Sign in", "login.signup": "Sign up",
         "login.already": "Already have an account?", "login.no_account": "Don\u2019t have an account?",
         "login.create_account": "Create a new account", "login.signin_account": "Sign in to your account", "msg.registration_disabled": "Registration is disabled. Please use GitHub or LinuxDo to sign in.",
@@ -858,7 +864,7 @@
         "msg.delete_failed": "删除失败: ", "msg.model_deleted": "模型已删除",
         "msg.switch_failed": "切换失败: ", "msg.llm_switched": "LLM → ",
         "msg.setup_banner": '⚠️ 未配置 LLM。点击右上角"模型"按钮添加你的 API 配置。',
-        "msg.summary": "摘要", "msg.readonly": "只读", "msg.protected": "受保护模型 - 禁止编辑", "msg.model_set": "模型: ",
+        "msg.summary": "摘要", "msg.readonly": "只读", "msg.protected": "受保护模型 - 禁止编辑", "msg.model_set": "模型: ", "msg.thinking": "思考中",
         "login.signin": "登录", "login.signup": "注册",
         "login.already": "已有账号？", "login.no_account": "还没有账号？",
         "login.create_account": "创建新账号", "login.signin_account": "登录你的账号", "msg.registration_disabled": "注册已关闭，请使用 GitHub 或 LinuxDo 登录。",
@@ -1226,7 +1232,7 @@
     function renderAssistant(container, rawText, streaming) {
       container.innerHTML = "";
       let text = (rawText || "").replace(/\r/g, "");
-      // strip thinking blocks (collapsed away for cleanliness)
+      // strip legacy <thinking> blocks (not shown)
       text = text.replace(/<thinking>[\s\S]*?<\/thinking>/g, "");
       // split into turns
       const parts = text.split(TURN_RE);
@@ -1252,12 +1258,51 @@
         }
         const body = document.createElement("div");
         body.className = "turn-body";
-        let bhtml = decorate(t.body);
-        body.innerHTML = '<div class="md">' + bhtml + '</div>';
+
+        // Extract <think>...</think> blocks and render as collapsible thinking sections
+        let turnBody = t.body || "";
+        const thinkBlocks = [];
+        let thinkMatch;
+        const thinkRe = /<think>([\s\S]*?)<\/think>/g;
+        while ((thinkMatch = thinkRe.exec(turnBody)) !== null) {
+          if (thinkMatch[1].trim()) thinkBlocks.push(thinkMatch[1].trim());
+        }
+        // Remove <think> blocks from the answer text
+        let answerText = turnBody.replace(thinkRe, "");
+        // Handle unclosed <think> during streaming (show in-progress thinking)
+        const unclosedMatch = answerText.match(/<think>([\s\S]*)$/);
+        if (unclosedMatch) {
+          if (unclosedMatch[1].trim()) thinkBlocks.push(unclosedMatch[1].trim());
+          answerText = answerText.replace(/<think>[\s\S]*$/, "");
+        }
+        // Remove leftover think tags
+        answerText = answerText.replace(/<\/?think>/g, "");
+
+        // Render thinking blocks (collapsed by default, except the latest if streaming)
+        thinkBlocks.forEach((tb, ti) => {
+          const isLastThink = isLive && ti === thinkBlocks.length - 1;
+          const tbox = document.createElement("div");
+          tbox.className = "think-box" + (isLastThink ? "" : " collapsed");
+          const tchip = document.createElement("div");
+          tchip.className = "think-chip" + (isLastThink ? " open" : "");
+          const thinkLabel = (typeof t === "function") ? (t("msg.thinking") || "Thinking") : "Thinking";
+          tchip.innerHTML = '<span class="tri">&#9654;</span> ' + thinkLabel;
+          tchip.onclick = () => { const open = tchip.classList.toggle("open"); tbox.classList.toggle("collapsed", !open); };
+          const tbody = document.createElement("div");
+          tbody.className = "think-body";
+          tbody.innerHTML = '<div class="md">' + decorate(tb) + '</div>';
+          tbox.appendChild(tchip);
+          tbox.appendChild(tbody);
+          body.appendChild(tbox);
+        });
+
+        // Render the answer text
+        let bhtml = decorate(answerText);
+        body.innerHTML += '<div class="md">' + bhtml + '</div>';
         wrap.appendChild(body);
         container.appendChild(wrap);
       });
-      if (!turns.some(t => (t.body || "").trim())) container.innerHTML = '<div class="md"><p style="opacity:.5">…</p></div>';
+      if (!turns.some(t => (t.body || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim())) container.innerHTML = '<div class="md"><p style="opacity:.5">…</p></div>';
     }
 
     function decorate(text) {
@@ -1271,7 +1316,7 @@
       // summary highlight
       out = out.replace(/<summary>([\s\S]*?)<\/summary>/g, (_, s) => `<blockquote><strong>"+t("msg.summary")+"</strong><br>${s}</blockquote>`);
       // leftover raw tags
-      out = out.replace(/<\/?(?:thinking|summary|tool_use|file_content)>/g, "");
+      out = out.replace(/<\/?(?:thinking|think|summary|tool_use|file_content)>/g, "");
       return out;
     }
 
