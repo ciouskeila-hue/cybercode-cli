@@ -1133,9 +1133,9 @@
     function sanitizeClientError(msg) {
       if (!msg) return "Service unavailable";
       let s = String(msg);
-      // Hide upstream URLs
+      // Clean URLs
       s = s.replace(/https?:\/\/[^\s"'<>]+/gi, "[api]");
-      // Hide upstream service names
+      // Clean service names
       s = s.replace(/friendli[\w-]*/gi, "[upstream]");
       s = s.replace(/l0veyou[\w-]*/gi, "[upstream]");
       s = s.replace(/chatgpt2api[\w-]*/gi, "[upstream]");

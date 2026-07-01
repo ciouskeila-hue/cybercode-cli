@@ -511,7 +511,7 @@ class Handler(BaseHTTPRequestHandler):
             traceback.print_exc()
             import traceback as _tb
             _tb.print_exc()
-            self._send_json({"error": sanitize_error(str(e))}, 500)  # SECURITY: sanitized, no upstream info
+            self._send_json({"error": sanitize_error(str(e))}, 500)
 
     def do_POST(self):
         path = urlparse(self.path).path

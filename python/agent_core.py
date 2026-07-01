@@ -249,7 +249,7 @@ def format_error(e):
 
 
 def sanitize_error(err_text):
-    """Sanitize error messages to hide upstream URLs, API keys, and real error details.
+    """Clean up error messages for display.
     Returns a generic error message that doesn't expose internal infrastructure."""
     if not err_text:
         return "Service temporarily unavailable"
@@ -260,19 +260,19 @@ def sanitize_error(err_text):
         return "Model is busy, please try again later"
     if "401" in s or "403" in s:
         return "Model authentication failed, please check configuration"
-    # Hide upstream URLs
+    # Clean URLs
     s = re.sub(r"https?://[^\s<>]+", "[api-endpoint]", s)
-    # Hide upstream service names (friendli, l0veyou, chatgpt2api, etc.)
+    # Clean service names
     s = re.sub(r"(?i)friendli[\w-]*", "[upstream]", s)
     s = re.sub(r"(?i)l0veyou[\w-]*", "[upstream]", s)
     s = re.sub(r"(?i)chatgpt2api[\w-]*", "[upstream]", s)
-    # Hide API keys (sk-xxx, sess-xxx, Bearer xxx)
+    # Clean API keys
     s = re.sub(r"(sk-[a-zA-Z0-9]{6})[a-zA-Z0-9]*", r"\1***", s)
     s = re.sub(r"(sess-[a-zA-Z0-9]{6})[a-zA-Z0-9]*", r"\1***", s)
     s = re.sub(r"Bearer\s+[a-zA-Z0-9_-]+", "Bearer ***", s)
-    # Hide IP addresses
+    # Clean IP addresses
     s = re.sub(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", "[ip]", s)
-    # Hide file paths that reveal server structure
+    # Clean file paths
     s = re.sub(r"/root/[^\s]+", "[server-path]", s)
     s = re.sub(r"/home/[^\s]+", "[server-path]", s)
     # Remove traceback details
@@ -1038,7 +1038,7 @@ class LLMClient:
                             print(f"[LLM Retry] HTTP {resp.status_code}, retry in {delay:.1f}s")
                             time.sleep(delay)
                             continue
-                        # Sanitize error - never expose real upstream URL or detailed error
+                        # Clean error for display
                         err_text = "!!!Error: " + sanitize_error(f"HTTP {resp.status_code}: {body}")
                         yield err_text
                         return LLMResponse(content=err_text)

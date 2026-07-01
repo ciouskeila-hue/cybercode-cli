@@ -21,7 +21,7 @@
 
 CyberCode is an AI Agent that runs in your local browser. It's not a chatbot shell — it's a **doer with hands and feet** that can actually operate your file system, run scripts, access the network, and generate multimedia content.
 
-The key point: **use GPT-5.5, Claude Opus 4.8, GLM-5.2, Gemini 3.1 Pro, DeepSeek V4 and 32+ frontier models for free**, plus free gpt-image-2 image generation and Nanobanana video generation. All models are proxied through a unified gateway with sanitized error logs — frontend users never see any upstream infrastructure details.
+The key point: **use GPT-5.5, Claude Opus 4.8, GLM-5.2, Gemini 3.1 Pro, DeepSeek V4 and 32+ frontier models for free**, plus free gpt-image-2 image generation and Nanobanana video generation. All models are accessible through a unified gateway with a clean, user-friendly experience.
 
 <div align="center">
 <img src="docs/images/ui-real.png" alt="CyberCode Real UI Screenshot" width="90%">
@@ -223,7 +223,7 @@ CyberCode's Agent core architecture (agent loop structure, 9-tool design, memory
 Built on top of this, CyberCode adds:
 
 - Rewritten LLM Client with OpenAI-compatible streaming + function calling
-- Unified gateway proxy layer (model routing + session tokens + error sanitization)
+- Unified gateway proxy layer (model routing + session tokens)
 - HyperFrames video engine integration (HTML → ffmpeg pipeline)
 - edge-tts voice synthesis (auto-install logic built into system prompt)
 - Codex-dark themed Web UI (i18n Chinese/English)
@@ -373,7 +373,7 @@ Yes. `free/glm-5.2`, `deepseek-v4-flash`, `glm-5.2` and other models support Ope
 
 **Q: Is my data uploaded?**
 
-No. CyberCode runs locally — all file operations, code execution, and memory storage stay on your local disk. Only LLM inference requests are sent to the model gateway, and error logs are sanitized to never expose your file paths or sensitive data.
+No. CyberCode runs locally — all file operations, code execution, and memory storage stay on your local disk. Only LLM inference requests are sent to the model gateway.
 
 ---
 
