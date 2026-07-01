@@ -466,7 +466,9 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         path, qs = url.path, parse_qs(url.query)
         try:
-            if not _check_auth(self) and path.startswith("/api/"):
+            # Public read-only endpoints (no auth required, safe for skip-login users)
+            _PUBLIC_GET = {"/api/status", "/api/sessions", "/api/skills", "/api/videos", "/api/hyperframes"}
+            if not _check_auth(self) and path.startswith("/api/") and path not in _PUBLIC_GET and not path.startswith("/api/hyperframes/") and not path.startswith("/api/video/"):
                 return self._send_json({"error": "unauthorized"}, 401)
             if path in ("", "/"):
                 return self._serve_html()
@@ -519,7 +521,10 @@ class Handler(BaseHTTPRequestHandler):
             # Allow logout without auth (user may be clearing stale session)
             if path == "/api/auth/logout":
                 return self._api_auth_logout()
-            if not _check_auth(self):
+            # Core agent endpoints work without auth (local agent, skip-login support)
+            _PUBLIC_POST = {"/api/chat", "/api/llm", "/api/llm/add", "/api/llm/update",
+                            "/api/llm/delete", "/api/stop", "/api/image", "/api/video"}
+            if not _check_auth(self) and path not in _PUBLIC_POST:
                 return self._send_json({"error": "unauthorized"}, 401)
             if path == "/api/chat":
                 return self._api_chat()

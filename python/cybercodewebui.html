@@ -366,6 +366,9 @@
           <span id="switch-text">Don't have an account?</span>
           <a id="switch-link">Sign up</a>
         </div>
+        <div style="margin-top:18px;text-align:center;">
+          <a id="skip-login-link" data-i18n="login.skip" style="color:rgba(138,180,255,.6);font-size:13px;cursor:pointer;text-decoration:underline;">Skip login — use your own API key</a>
+        </div>
       </div>
     </div>
     <main class="desktop">
@@ -794,7 +797,7 @@
         "msg.summary": "summary", "msg.readonly": "read-only", "msg.protected": "Protected model - editing disabled", "msg.model_set": "Model: ", "msg.thinking": "Thinking",
         "login.signin": "Sign in", "login.signup": "Sign up",
         "login.already": "Already have an account?", "login.no_account": "Don\u2019t have an account?",
-        "login.create_account": "Create a new account", "login.signin_account": "Sign in to your account", "msg.registration_disabled": "Registration is disabled. Please use GitHub or LinuxDo to sign in.",
+        "login.create_account": "Create a new account", "login.signin_account": "Sign in to your account", "msg.registration_disabled": "Registration is disabled. Please use GitHub or LinuxDo to sign in.", "login.skip": "Skip login — use your own API key", "msg.skip_login_hint": "Skipped login — add your own API key in Settings to use models.",
       },
       zh: {
         "nav.new": "新会话", "nav.suggest": "任务建议", "nav.skills": "技能",
@@ -867,7 +870,7 @@
         "msg.summary": "摘要", "msg.readonly": "只读", "msg.protected": "受保护模型 - 禁止编辑", "msg.model_set": "模型: ", "msg.thinking": "思考中",
         "login.signin": "登录", "login.signup": "注册",
         "login.already": "已有账号？", "login.no_account": "还没有账号？",
-        "login.create_account": "创建新账号", "login.signin_account": "登录你的账号", "msg.registration_disabled": "注册已关闭，请使用 GitHub 或 LinuxDo 登录。",
+        "login.create_account": "创建新账号", "login.signin_account": "登录你的账号", "msg.registration_disabled": "注册已关闭，请使用 GitHub 或 LinuxDo 登录。", "login.skip": "跳过登录 — 使用自己的 API Key", "msg.skip_login_hint": "已跳过登录 — 在设置中添加自己的 API Key 以使用模型。",
       }
     };
     let _lang = localStorage.getItem("cybercode_lang") || "en";
@@ -1000,6 +1003,18 @@
     function showLogin() { $("login-overlay").classList.remove("hide"); $("login-overlay").style.display = "flex"; }
     function hideLogin() { $("login-overlay").classList.add("hide"); setTimeout(() => { $("login-overlay").style.display = "none"; }, 300); }
 
+    function showSkipLoginBanner() {
+      const existing = $("skip-banner");
+      if (existing) existing.remove();
+      const banner = document.createElement("div");
+      banner.id = "skip-banner";
+      banner.style.cssText = "padding:8px 14px;margin:6px 0;background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.25);border-radius:8px;font-size:13px;color:rgba(255,193,7,.85);display:flex;align-items:center;gap:8px;";
+      banner.innerHTML = '<span>&#9888;</span><span>' + (typeof t === "function" ? t("msg.skip_login_hint") : "Skipped login — add your own API key in Settings to use models.") + '</span>';
+      const sidebar = $("sidebar") || document.querySelector(".sidebar");
+      if (sidebar) sidebar.prepend(banner);
+      else document.body.prepend(banner);
+    }
+
     function setLoginError(msg) { $("login-error").textContent = msg || ""; }
 
     function switchMode() {
@@ -1058,6 +1073,20 @@
 
       // Switch mode
       $("switch-link").onclick = switchMode;
+
+      // Skip login — use without cloud models
+      $("skip-login-link").onclick = () => {
+        authToken = "";
+        cloudToken = "";
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("cloud_token");
+        hideLogin();
+        // No cloud models scanned; clear any existing cloud models
+        if (window.cybercodeModels) window.cybercodeModels = [];
+        state.cloudModels = [];
+        renderLlmMenu();
+        showSkipLoginBanner();
+      };
 
       // Enter key
       $("login-password").addEventListener("keydown", e => { if (e.key === "Enter") $("login-submit").click(); });
