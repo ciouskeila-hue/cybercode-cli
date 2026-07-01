@@ -1246,11 +1246,13 @@ def main():
     daemon.start()
 
     url = f"http://{args.host}:{args.port}"
-    print(f"\n  ╭───────────────────────────────────────────╮")
-    print(f"  │  cybercode    ·  self-contained agent     │")
-    print(f"  │  open  {url:<33}│")
-    print(f"  │  Ctrl+C to stop                           │")
-    print(f"  ╰───────────────────────────────────────────╯\n")
+    print("")
+    print("  +-----------------------------------------+")
+    print("  |  cybercode    -  self-contained agent   |")
+    print(f"  |  open  {url:<33}|")
+    print("  |  Ctrl+C to stop                         |")
+    print("  +-----------------------------------------+")
+    print("")
     try:
         while True:
             time.sleep(3600)

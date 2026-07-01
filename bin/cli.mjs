@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// cybercode CLI launcher — bootstraps a Python env and starts the web UI.
+// cybercode CLI launcher -- bootstraps a Python env and starts the web UI.
 // Supports: npm install -g cybercode-cli && cybercode
 
 import { spawn, spawnSync } from "node:child_process";
@@ -12,6 +12,16 @@ import { createRequire } from "node:module";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json");
+
+// ---- Fix Windows console encoding (CP936 -> UTF-8) ----
+if (platform() === "win32") {
+  try {
+    spawnSync("chcp", ["65001"], { stdio: "ignore", shell: true });
+    if (process.stdout.isTTY && typeof process.stdout._handle?.setBlocking === "function") {
+      process.stdout._handle.setBlocking(true);
+    }
+  } catch {}
+}
 
 const COLORS = {
   reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
@@ -31,10 +41,10 @@ async function checkForUpdates() {
     if (latest && latest !== pkg.version) {
       const isGlobal = __dirname.includes("node_modules");
       const updateCmd = isGlobal ? `npm update -g ${pkg.name}` : `npm install ${pkg.name}@latest`;
-      console.log(c("yellow", `\n  ┌─ Update available ─────────────────────────────┐`));
-      console.log(c("yellow", `  │  ${c("bold", pkg.name)} ${c("dim", pkg.version)} → ${c("green", latest)}${" ".repeat(Math.max(0, 26 - latest.length))}│`));
-      console.log(c("yellow", `  │  Run: ${c("cyan", updateCmd)}${" ".repeat(Math.max(0, 44 - updateCmd.length))}│`));
-      console.log(c("yellow", `  └────────────────────────────────────────────────┘\n`));
+      console.log(c("yellow", `\n  +-- Update available -----------------------+`));
+      console.log(c("yellow", `  |  ${c("bold", pkg.name)} ${c("dim", pkg.version)} -> ${c("green", latest)}${" ".repeat(Math.max(0, 24 - latest.length))}|`));
+      console.log(c("yellow", `  |  Run: ${c("cyan", updateCmd)}${" ".repeat(Math.max(0, 37 - updateCmd.length))}|`));
+      console.log(c("yellow", `  +--------------------------------------------+\n`));
     }
   } catch {}
 }
@@ -67,7 +77,7 @@ function parseArgs(rawArgv) {
 
 function showHelp() {
   console.log(`
-${c("bold", "cybercode")} ${c("dim", `v${pkg.version}`)} — Codex-dark web UI with a built-in self-evolving agent
+${c("bold", "cybercode")} ${c("dim", `v${pkg.version}`)} -- Codex-dark web UI with a built-in self-evolving agent
 
 ${c("bold", "INSTALL")}
   ${c("green", "npm install -g cybercode-cli")}
@@ -119,47 +129,47 @@ async function selfUpdate() {
     const latest = data.version;
 
     if (latest === pkg.version) {
-      console.log(c("green", `  ✓ Already on latest version (${pkg.version})\n`));
+      console.log(c("green", `  OK Already on latest version (${pkg.version})\n`));
       process.exit(0);
     }
 
-    console.log(c("yellow", `  Update available: ${pkg.version} → ${latest}\n`));
+    console.log(c("yellow", `  Update available: ${pkg.version} -> ${latest}\n`));
     console.log(c("dim", `  Running: npm install -g ${pkg.name}@latest\n`));
 
     const result = spawnSync("npm", ["install", "-g", `${pkg.name}@latest`], { stdio: "inherit", shell: true });
     if (result.status === 0) {
-      console.log(c("green", `\n  ✓ Updated to ${latest}\n`));
+      console.log(c("green", `\n  OK Updated to ${latest}\n`));
     } else {
-      console.error(c("red", `\n  ✗ Update failed. Try manually: npm install -g ${pkg.name}@latest\n`));
+      console.error(c("red", `\n  X Update failed. Try manually: npm install -g ${pkg.name}@latest\n`));
     }
     process.exit(result.status || 0);
   } catch (e) {
-    console.error(c("red", `\n  ✗ Cannot check updates: ${e.message}\n`));
+    console.error(c("red", `\n  X Cannot check updates: ${e.message}\n`));
     process.exit(1);
   }
 }
 
 // ---- Doctor diagnostics ----
 async function runDoctor() {
-  console.log(c("bold", c("blue", `\n  cybercode doctor — diagnostics\n`)));
+  console.log(c("bold", c("blue", `\n  cybercode doctor -- diagnostics\n`)));
   let allOk = true;
 
   // Check Node
   const nodeVer = process.versions.node;
   const nodeMajor = parseInt(nodeVer.split(".")[0], 10);
   if (nodeMajor >= 18) {
-    console.log(c("green", `  ✓ Node.js v${nodeVer}`));
+    console.log(c("green", `  OK Node.js v${nodeVer}`));
   } else {
-    console.log(c("red", `  ✗ Node.js v${nodeVer} (need >=18)`));
+    console.log(c("red", `  X Node.js v${nodeVer} (need >=18)`));
     allOk = false;
   }
 
   // Check Python
   const python = findPython(true);
   if (python) {
-    console.log(c("green", `  ✓ Python: ${python}`));
+    console.log(c("green", `  OK Python: ${python}`));
   } else {
-    console.log(c("red", `  ✗ Python 3.8+ not found`));
+    console.log(c("red", `  X Python 3.8+ not found`));
     allOk = false;
   }
 
@@ -168,19 +178,19 @@ async function runDoctor() {
     try {
       const result = spawnSync(python, ["-c", "import requests; print(requests.__version__)"], { encoding: "utf-8", timeout: 5000 });
       if (result.status === 0) {
-        console.log(c("green", `  ✓ requests ${result.stdout.trim()}`));
+        console.log(c("green", `  OK requests ${result.stdout.trim()}`));
       } else {
-        console.log(c("yellow", `  ⚠ requests not installed (will auto-install on first run)`));
+        console.log(c("yellow", `  ! requests not installed (will auto-install on first run)`));
       }
     } catch {
-      console.log(c("yellow", `  ⚠ requests check failed`));
+      console.log(c("yellow", `  ! requests check failed`));
     }
   }
 
   // Check working dir
   const workDir = join(homedir(), ".cybercode");
   if (existsSync(workDir)) {
-    console.log(c("green", `  ✓ Working dir: ${workDir}`));
+    console.log(c("green", `  OK Working dir: ${workDir}`));
   } else {
     console.log(c("dim", `  ○ Working dir not created yet (will create on first run): ${workDir}`));
   }
@@ -192,9 +202,9 @@ async function runDoctor() {
     const data = await res.json();
     const latest = data.version;
     if (latest === pkg.version) {
-      console.log(c("green", `  ✓ cybercode-cli v${pkg.version} (latest)`));
+      console.log(c("green", `  OK cybercode-cli v${pkg.version} (latest)`));
     } else {
-      console.log(c("yellow", `  ⚠ Update available: ${pkg.version} → ${latest}`));
+      console.log(c("yellow", `  ! Update available: ${pkg.version} -> ${latest}`));
       console.log(c("dim", `    Run: cybercode update`));
     }
   } catch {
@@ -225,7 +235,7 @@ function findPython(quiet) {
   }
 
   if (!quiet) {
-    console.error(c("red", "✗ Python 3.8+ not found."));
+    console.error(c("red", "X Python 3.8+ not found."));
     console.error(c("dim", "  Install Python 3.8+, or set CYBERCODE_PYTHON env var."));
     console.error(c("dim", "  Download: https://www.python.org/downloads/"));
     process.exit(1);
@@ -261,10 +271,10 @@ function ensureRequests(python) {
     const result = spawnSync(python, ["-c", "import requests; print(requests.__version__)"], { encoding: "utf-8", timeout: 5000 });
     if (result.status === 0 && result.stdout.trim()) return;
   } catch {}
-  console.log(c("yellow", "→ installing requests..."));
+  console.log(c("yellow", "-> installing requests..."));
   const install = spawnSync(python, ["-m", "pip", "install", "requests", "--quiet", "--disable-pip-version-check"], { stdio: "inherit", timeout: 60000 });
   if (install.status !== 0) {
-    console.error(c("red", "✗ Failed to install requests. Please run: pip install requests"));
+    console.error(c("red", "X Failed to install requests. Please run: pip install requests"));
     process.exit(1);
   }
 }
@@ -346,17 +356,33 @@ async function launchWebUI(rawArgv) {
   const port = args.port || findFreePort(18600, python);
   const url = `http://${args.host}:${port}`;
 
+  // ASCII art logo (pure ASCII, no Unicode box-drawing)
+  const cyan = COLORS.cyan, blue = COLORS.blue, green = COLORS.green, dim = COLORS.dim, bold = COLORS.bold, yellow = COLORS.yellow, reset = COLORS.reset;
+
+  const logo = [
+    `  ${cyan}  ___ ___  _  _ ___ ___ ___ ___   ${reset}`,
+    `  ${cyan} / __| _ \\| \\| |   \\ __| _ \\ __|  ${reset}`,
+    `  ${cyan}| (__|   /| .'| |) | _||   /__|  ${reset}`,
+    `  ${cyan} \\___|_|_\\|_|\\_|___/|___|_|_\\___| ${reset}`,
+  ];
+
+  const line = `  ${blue}+---------------------------------------+${reset}`;
+  const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
+
   console.log();
-  console.log(`  ${c("bold", c("blue", "╭─────────────────────────────────────────────────╮"))}`);
-  console.log(`  ${c("bold", c("blue", "│"))}  ${c("bold", "cybercode")} ${c("dim", `v${currentVersion}`)}                              ${c("bold", c("blue", "│"))}`);
-  console.log(`  ${c("bold", c("blue", "│"))}  ${c("dim", "working dir:")} ${workDir.padEnd(34).slice(0, 34)} ${c("bold", c("blue", "│"))}`);
-  console.log(`  ${c("bold", c("blue", "│"))}  ${c("green", `▶ ${url}`)}${" ".repeat(Math.max(0, 33 - url.length))} ${c("bold", c("blue", "│"))}`);
-  if (!configured) console.log(`  ${c("bold", c("blue", "│"))}  ${c("yellow", "⚠ edit mykey.json to add your API key")}       ${c("bold", c("blue", "│"))}`);
-  console.log(`  ${c("bold", c("blue", "╰─────────────────────────────────────────────────╯"))}`);
+  for (const l of logo) console.log(l);
+  console.log();
+  console.log(line);
+  console.log(`  ${blue}|${reset}  ${bold}cybercode${reset} ${dim}v${currentVersion}${reset}${pad("", 25 - currentVersion.length)}${blue}|${reset}`);
+  console.log(`  ${blue}|${reset}  ${dim}${pad("working dir:", 36)}${blue}|${reset}`);
+  console.log(`  ${blue}|${reset}    ${dim}${pad(workDir, 34)}${blue}|${reset}`);
+  console.log(`  ${blue}|${reset}  ${green}> ${url}${reset}${pad("", 35 - url.length)}${blue}|${reset}`);
+  if (!configured) console.log(`  ${blue}|${reset}  ${yellow}! edit mykey.json to add your API key${reset}  ${blue}|${reset}`);
+  console.log(line);
   console.log();
 
   if (!configured) {
-    console.log(c("yellow", `  ⚠ mykey.json not configured yet.`));
+    console.log(c("yellow", `  ! mykey.json not configured yet.`));
     console.log(c("dim", `    Edit: ${mykeyPath}`));
     console.log(c("dim", `    Or log in via the web UI (requires l0veyou backend).`));
     console.log();
@@ -367,12 +393,12 @@ async function launchWebUI(rawArgv) {
   const child = spawn(python, pyArgs, { cwd: workDir, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, PYTHONUNBUFFERED: "1" } });
   child.stdout.on("data", (data) => process.stdout.write(data));
   child.stderr.on("data", (data) => process.stderr.write(c("dim", data.toString())));
-  child.on("error", (err) => { console.error(c("red", `✗ Failed to start: ${err.message}`)); process.exit(1); });
+  child.on("error", (err) => { console.error(c("red", `X Failed to start: ${err.message}`)); process.exit(1); });
   child.on("exit", (code) => process.exit(code || 0));
 
   if (!args.noBrowser) {
     try { await waitForServer(`${url}/api/status`, 40); openBrowser(url); }
-    catch { console.log(c("dim", `  (browser auto-open skipped — open ${url} manually)`)); }
+    catch { console.log(c("dim", `  (browser auto-open skipped -- open ${url} manually)`)); }
   }
 
   process.on("SIGINT", () => { child.kill("SIGINT"); process.exit(0); });
@@ -441,7 +467,7 @@ async function runLogout() {
   if (existsSync(pycache)) { try { rmSync(pycache, { recursive: true, force: true }); } catch {} }
 
   if (cleared > 0 || killedProcs > 0) {
-    console.log(c("green", `\n  ✓ Logged out successfully.`));
+    console.log(c("green", `\n  OK Logged out successfully.`));
     if (cleared > 0) {
       console.log(c("dim", `  Removed: ${removed.join(", ")}`));
     }
@@ -457,11 +483,11 @@ async function runLogout() {
 const argv = process.argv.slice(2);
 const { command, args } = splitCommand(argv);
 if (command === "webui") {
-  launchWebUI(args).catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
+  launchWebUI(args).catch((err) => { console.error(c("red", `X ${err.message}`)); process.exit(1); });
 } else if (command === "update") {
-  selfUpdate().catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
+  selfUpdate().catch((err) => { console.error(c("red", `X ${err.message}`)); process.exit(1); });
 } else if (command === "doctor") {
-  runDoctor().catch((err) => { console.error(c("red", `✗ ${err.message}`)); process.exit(1); });
+  runDoctor().catch((err) => { console.error(c("red", `X ${err.message}`)); process.exit(1); });
 } else if (command === "logout") {
   runLogout();
 } else {
