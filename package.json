@@ -1,7 +1,7 @@
 {
   "name": "cybercode-cli",
-  "version": "1.1.0",
-  "description": "Codex-dark web UI with a built-in self-evolving agent. Supports LLM-powered coding, image/video generation, and more.",
+  "version": "1.4.16",
+  "description": "Codex-dark web UI with a built-in self-evolving agent. Free GPT-5.5, Claude Opus 4.8, GLM-5.2 + image/video generation.",
   "type": "module",
   "main": "bin/cli.mjs",
   "bin": {
@@ -9,11 +9,13 @@
   },
   "files": [
     "bin/",
-    "python/*.py",
-    "python/*.html",
-    "templates/",
+    "python/",
     "skills/",
+    "templates/",
+    "scripts/",
+    "docs/",
     "README.md",
+    "README_CN.md",
     "LICENSE"
   ],
   "engines": {
@@ -24,7 +26,7 @@
     "webui": "node bin/cli.mjs webui",
     "update": "node bin/cli.mjs update",
     "doctor": "node bin/cli.mjs doctor",
-    "prepublishOnly": "node -e \"console.log('Publishing cybercode-cli v' + require('./package.json').version)\""
+    "postinstall": "node scripts/postinstall.cjs"
   },
   "keywords": [
     "cli",
@@ -35,17 +37,23 @@
     "web-ui",
     "chatgpt",
     "coding-assistant",
-    "self-evolving"
+    "self-evolving",
+    "gpt5",
+    "claude",
+    "glm",
+    "image-generation",
+    "video-generation",
+    "hyperframes"
   ],
   "author": "CyberCode",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cybercode/cli.git"
+    "url": "git+https://github.com/ciouskeila-hue/cybercode-cli.git"
   },
-  "homepage": "https://l0veyou.com",
+  "homepage": "https://github.com/ciouskeila-hue/cybercode-cli",
   "bugs": {
-    "url": "https://github.com/cybercode/cli/issues"
+    "url": "https://github.com/ciouskeila-hue/cybercode-cli/issues"
   },
   "os": [
     "darwin",
