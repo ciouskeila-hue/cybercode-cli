@@ -1314,7 +1314,7 @@
       // tool call header lines -> chips
       out = out.replace(TOOL_RE, (_, name) => `<div><span class="tool-chip">🛠 ${esc(name)}</span></div>`);
       // summary highlight
-      out = out.replace(/<summary>([\s\S]*?)<\/summary>/g, (_, s) => `<blockquote><strong>"+t("msg.summary")+"</strong><br>${s}</blockquote>`);
+      out = out.replace(/<summary>([\s\S]*?)<\/summary>/g, (_, s) => `<blockquote><strong>${typeof t === "function" ? t("msg.summary") : "Summary"}</strong><br>${s}</blockquote>`);
       // leftover raw tags
       out = out.replace(/<\/?(?:thinking|think|summary|tool_use|file_content)>/g, "");
       return out;

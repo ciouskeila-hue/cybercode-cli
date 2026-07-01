@@ -37,10 +37,24 @@ import tempfile
 import threading
 import time
 import traceback
+import socket as _socket
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
+# Bypass VPN/proxy fake-IP DNS hijack for upstream API hosts
+# Maps domain -> real IP so connections go directly, avoiding intermittent SSL errors
+_UPSTREAM_HOST_OVERRIDES = {
+    "l0veyou.com": "152.53.152.103",
+}
+_orig_getaddrinfo = _socket.getaddrinfo
+def _patched_getaddrinfo(host, port, *args, **kwargs):
+    if host in _UPSTREAM_HOST_OVERRIDES:
+        real_ip = _UPSTREAM_HOST_OVERRIDES[host]
+        return [(_socket.AF_INET, _socket.SOCK_STREAM, 6, '', (real_ip, port))]
+    return _orig_getaddrinfo(host, port, *args, **kwargs)
+_socket.getaddrinfo = _patched_getaddrinfo
 
 try:
     import requests
@@ -1007,16 +1021,20 @@ class LLMClient:
         if self.stream:
             payload["stream_options"] = {"include_usage": True}
 
-        # Retry logic
+        # Retry logic - use fresh session per attempt to avoid stale SSL connections
         retryable = {408, 409, 425, 429, 500, 502, 503, 504}
         for attempt in range(self.max_retries + 1):
             try:
-                with requests.post(url, headers=headers, json=payload, stream=self.stream,
-                                   timeout=(self.connect_timeout, self.read_timeout)) as resp:
+                # Fresh session each attempt to clear connection pool (fixes intermittent SSL errors)
+                session = requests.Session()
+                session.trust_env = False  # Bypass proxy env vars
+                with session.post(url, headers=headers, json=payload, stream=self.stream,
+                                  timeout=(self.connect_timeout, self.read_timeout),
+                                  verify=True) as resp:
                     if resp.status_code >= 400:
                         body = resp.text[:500]
                         if resp.status_code in retryable and attempt < self.max_retries:
-                            delay = min(30, 1.5 * (2 ** attempt))
+                            delay = min(30, 2.0 * (2 ** attempt))
                             print(f"[LLM Retry] HTTP {resp.status_code}, retry in {delay:.1f}s")
                             time.sleep(delay)
                             continue
@@ -1030,13 +1048,12 @@ class LLMClient:
                     else:
                         return self._parse_json(resp.json())
             except (requests.Timeout, requests.ConnectionError) as e:
-                err = "!!!Error: " + sanitize_error(f"{type(e).__name__}: {e}")
                 if attempt < self.max_retries:
-                    delay = min(30, 1.5 * (2 ** attempt))
+                    delay = min(30, 2.0 * (2 ** attempt))
                     print(f"[LLM Retry] {type(e).__name__}, retry in {delay:.1f}s")
-                    yield err
                     time.sleep(delay)
                     continue
+                err = "!!!Error: " + sanitize_error(f"{type(e).__name__}: {e}")
                 yield err
                 return LLMResponse(content=err)
         return LLMResponse(content="!!!Error: Max retries exceeded")
@@ -1045,6 +1062,7 @@ class LLMClient:
         """Parse OpenAI SSE stream. Yields text chunks, returns LLMResponse."""
         content_text = ""
         tc_buf = {}  # index -> {id, name, args}
+        _in_think = False  # track think block state for proper aggregation
 
         for line in resp.iter_lines():
             if not line:
@@ -1073,9 +1091,16 @@ class LLMClient:
 
             # Reasoning content (some providers) - wrap in <think> tags for frontend separation
             if rc := delta.get("reasoning_content") or delta.get("reasoning", ""):
-                yield f"<think>{rc}</think>"
+                if not _in_think:
+                    yield f"<think>{rc}"
+                    _in_think = True
+                else:
+                    yield rc
 
             if delta.get("content"):
+                if _in_think:
+                    yield "</think>"
+                    _in_think = False
                 text = delta["content"]
                 content_text += text
                 yield text
@@ -1091,6 +1116,11 @@ class LLMClient:
                     tc_buf[idx]["args"] += func["arguments"]
                 if tc.get("id") and not tc_buf[idx]["id"]:
                     tc_buf[idx]["id"] = tc["id"]
+
+        # Close any open think block at end of stream
+        if _in_think:
+            yield "</think>"
+            _in_think = False
 
         # Build tool calls
         tool_calls = []
